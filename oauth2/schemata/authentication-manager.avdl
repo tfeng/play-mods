@@ -1,0 +1,25 @@
+@namespace("me.tfeng.playmods.oauth2")
+protocol AuthenticationManager {
+
+  record ClientAuthentication {
+    string id;
+    array<string> authorities;
+    array<string> scopes;
+  }
+
+  record UserAuthentication {
+    string id;
+    array<string> authorities;
+  }
+
+  record Authentication {
+    ClientAuthentication client;
+    union { null, UserAuthentication } user;
+  }
+
+  error AuthenticationError {
+    string message;
+  }
+
+  Authentication authenticate(string token) throws AuthenticationError;
+}
