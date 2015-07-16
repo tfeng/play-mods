@@ -65,8 +65,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
   private Map<List<String>, Protocol> protocolCache = Maps.newHashMap();
 
   @Override
-  public Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection)
-      throws IOException {
+  public Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection) throws IOException {
     Protocol serverProtocol = responder.getLocal();
     byte[] serverMD5 = serverProtocol.getMD5();
     String namespace = serverProtocol.getNamespace();
@@ -76,8 +75,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
     HandshakeResponse response = new HandshakeResponse();
     Protocol protocol = null;
     if (clientHash == null) {
-      LOG.error("Client protocol MD5 is missing from request (namespace=" + namespace + ", name=" +
-          name + ")");
+      LOG.error("Client protocol MD5 is missing from request (namespace=" + namespace + ", name=" + name + ")");
     } else {
       byte[] clientMD5 = clientHash.bytes();
       if (Arrays.equals(clientMD5, serverMD5)) {
@@ -88,13 +86,13 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
         protocol = getProtocol(namespace, name, clientMD5String);
         if (protocol == null) {
           try {
-            protocol = AvroD2Helper.readProtocolFromZk(avroD2Component.getZooKeeper(), namespace,
-                name, clientMD5String);
+            protocol = AvroD2Helper.readProtocolFromZk(avroD2Component.getZooKeeper(), namespace, name,
+                clientMD5String);
             response.setMatch(HandshakeMatch.CLIENT);
             setProtocol(namespace, name, clientMD5String, protocol);
           } catch (InterruptedException | KeeperException e) {
-            LOG.error("Unable to read schema from ZooKeeper for protocol (namespace=" + namespace +
-                ", name=" + name + ", MD5=" + clientMD5String + ")", e);
+            LOG.error("Unable to read schema from ZooKeeper for protocol (namespace=" + namespace + ", name=" + name
+                + ", MD5=" + clientMD5String + ")", e);
           }
         } else {
           response.setMatch(HandshakeMatch.CLIENT);
@@ -125,8 +123,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
     return protocolCache.get(ImmutableList.of(namespace, name, md5));
   }
 
-  private synchronized Protocol setProtocol(String namespace, String name, String md5,
-      Protocol protocol) {
+  private synchronized Protocol setProtocol(String namespace, String name, String md5, Protocol protocol) {
     return protocolCache.put(ImmutableList.of(namespace, name, md5), protocol);
   }
 }

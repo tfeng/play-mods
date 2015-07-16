@@ -64,8 +64,7 @@ public class ClientConfigFactory implements InitializingBean {
       asyncHttpClientConfig.setMaxTotalConnections(maxTotalConnections);
       asyncHttpClientConfig.setRequestTimeout(requestTimeout);
     } else {
-      LOG.info("Async http client config is provided through Spring wiring; "
-            + "ignoring explicit properties");
+      LOG.info("Async http client config is provided through Spring wiring; ignoring explicit properties");
     }
   }
 

@@ -62,8 +62,7 @@ public class JsonIpcController extends Controller {
 
   private static final ALogger LOG = Logger.of(JsonIpcController.class);
 
-  private static Object getRequest(Responder responder, Message message, byte[] data)
-      throws IOException {
+  private static Object getRequest(Responder responder, Message message, byte[] data) throws IOException {
     Schema schema = message.getRequest();
     if (ArrayUtils.isEmpty(data)) {
       // The method takes no argument; use empty data.
@@ -84,8 +83,7 @@ public class JsonIpcController extends Controller {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
     ContentType contentType = ContentType.parse(contentTypeHeader);
     if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
-      throw new RuntimeException("Unable to handle content type " + contentType + "; "
-          + CONTENT_TYPE + " is expected");
+      throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
     }
 
     Class<?> protocolClass = Play.application().classloader().loadClass(protocol);
@@ -110,8 +108,7 @@ public class JsonIpcController extends Controller {
     } else {
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
       return Promise.promise(() -> {
-        Authentication currentAuthentication =
-            SecurityContextHolder.getContext().getAuthentication();
+        Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(authentication);
         try {
           Object result = responder.respond(avroMessage, request);

@@ -30,6 +30,6 @@ import org.apache.avro.ipc.AsyncRequestor;
  */
 public interface ResponseProcessor {
 
-  Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message,
-      List<ByteBuffer> response) throws Exception;
+  Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message, List<ByteBuffer> response)
+      throws Exception;
 }

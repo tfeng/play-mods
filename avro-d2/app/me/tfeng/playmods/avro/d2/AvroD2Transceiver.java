@@ -35,8 +35,7 @@ public class AvroD2Transceiver extends AsyncHttpTransceiver {
 
   private final String remoteName;
 
-  public AvroD2Transceiver(Protocol protocol, URL url, ExecutionContext executionContext,
-      RequestPoster requestPoster) {
+  public AvroD2Transceiver(Protocol protocol, URL url, ExecutionContext executionContext, RequestPoster requestPoster) {
     super(url, executionContext, requestPoster);
     remoteName = AvroD2Helper.getUri(protocol).toString();
   }

@@ -102,16 +102,13 @@ public class AvroHelper {
     return node.toString();
   }
 
-  public static Object createGenericRequestFromRecord(Schema requestSchema, JsonNode record)
-      throws IOException {
+  public static Object createGenericRequestFromRecord(Schema requestSchema, JsonNode record) throws IOException {
     JsonDecoder jsonDecoder = DecoderFactory.get().jsonDecoder(requestSchema, record.toString());
     return new GenericDatumReader<>(requestSchema, requestSchema).read(null, jsonDecoder);
   }
 
-  public static <T> T createSpecificRequestFromRecord(Class<T> requestClass, JsonNode record)
-      throws IOException {
-    JsonDecoder jsonDecoder =
-        DecoderFactory.get().jsonDecoder(getSchema(requestClass), record.toString());
+  public static <T> T createSpecificRequestFromRecord(Class<T> requestClass, JsonNode record) throws IOException {
+    JsonDecoder jsonDecoder = DecoderFactory.get().jsonDecoder(getSchema(requestClass), record.toString());
     return new SpecificDatumReader<>(requestClass).read(null, jsonDecoder);
   }
 
@@ -179,8 +176,7 @@ public class AvroHelper {
 
   public static String toJson(Schema schema, Object object) throws IOException {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    JsonGenerator generator =
-        new JsonFactory().createJsonGenerator(outputStream, JsonEncoding.UTF8);
+    JsonGenerator generator = new JsonFactory().createJsonGenerator(outputStream, JsonEncoding.UTF8);
     generator.useDefaultPrettyPrinter();
     SpecificDatumWriter<Object> writer = new SpecificDatumWriter<>(schema);
     JsonEncoder encoder = EncoderFactory.get().jsonEncoder(schema, generator);
@@ -203,16 +199,15 @@ public class AvroHelper {
     return reader.read(null, DecoderFactory.get().jsonDecoder(schema, json));
   }
 
-  private static JsonNode convertFromSimpleRecord(Schema schema, JsonNode json,
-      JsonNodeFactory factory) throws IOException {
+  private static JsonNode convertFromSimpleRecord(Schema schema, JsonNode json, JsonNodeFactory factory)
+      throws IOException {
     if (json.isObject() && schema.getType() == Type.RECORD) {
       ObjectNode node = (ObjectNode) json;
       ObjectNode newNode = factory.objectNode();
       for (Field field : schema.getFields()) {
         String fieldName = field.name();
         if (node.has(fieldName)) {
-          newNode.set(fieldName,
-              convertFromSimpleRecord(field.schema(), node.get(fieldName), factory));
+          newNode.set(fieldName, convertFromSimpleRecord(field.schema(), node.get(fieldName), factory));
         } else if (field.defaultValue() != null) {
           newNode.set(fieldName, Json.parse(field.defaultValue().toString()));
         } else {
@@ -241,8 +236,7 @@ public class AvroHelper {
           for (Schema unionType : schema.getTypes()) {
             if (unionType.getFullName().equals(entry.getKey())) {
               ObjectNode newNode = factory.objectNode();
-              newNode.set(entry.getKey(),
-                  convertFromSimpleRecord(unionType, entry.getValue(), factory));
+              newNode.set(entry.getKey(), convertFromSimpleRecord(unionType, entry.getValue(), factory));
               return newNode;
             }
           }
@@ -268,8 +262,8 @@ public class AvroHelper {
     }
   }
 
-  private static JsonNode convertToSimpleRecord(Schema schema, JsonNode json,
-      JsonNodeFactory factory) throws IOException {
+  private static JsonNode convertToSimpleRecord(Schema schema, JsonNode json, JsonNodeFactory factory)
+      throws IOException {
     if (json.isObject() && schema.getType() == Type.RECORD) {
       ObjectNode node = (ObjectNode) json;
       ObjectNode newNode = factory.objectNode();
@@ -307,8 +301,7 @@ public class AvroHelper {
           for (Schema unionType : schema.getTypes()) {
             if (unionType.getFullName().equals(entry.getKey())) {
               ObjectNode newNode = factory.objectNode();
-              newNode.set(entry.getKey(),
-                  convertToSimpleRecord(unionType, entry.getValue(), factory));
+              newNode.set(entry.getKey(), convertToSimpleRecord(unionType, entry.getValue(), factory));
               return newNode;
             }
           }

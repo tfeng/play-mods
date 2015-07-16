@@ -62,8 +62,7 @@ public class BinaryIpcController extends Controller {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
     ContentType contentType = ContentType.parse(contentTypeHeader);
     if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
-      throw new RuntimeException("Unable to handle content type " + contentType + "; "
-          + CONTENT_TYPE + " is expected");
+      throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
     }
 
     Class<?> protocolClass = Play.application().classloader().loadClass(protocol);

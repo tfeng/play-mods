@@ -44,15 +44,14 @@ public class AvroD2Helper {
 
   public static final String SCHEME = "avsd";
 
-  public static String createServerNode(ZooKeeper zk, Protocol protocol, URL serverUrl)
-      throws KeeperException, InterruptedException {
+  public static String createServerNode(ZooKeeper zk, Protocol protocol, URL serverUrl) throws InterruptedException,
+      KeeperException {
     ensurePath(zk, getServersZkPath(protocol));
-    return zk.create(getServersZkPath(protocol) + "/", serverUrl.toString().getBytes(),
-        Ids.READ_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+    return zk.create(getServersZkPath(protocol) + "/", serverUrl.toString().getBytes(), Ids.READ_ACL_UNSAFE,
+        CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 
-  public static void createVersionNode(ZooKeeper zk, Protocol protocol)
-      throws KeeperException, InterruptedException {
+  public static void createVersionNode(ZooKeeper zk, Protocol protocol) throws KeeperException, InterruptedException {
     String path = getVersionsZkPath(protocol);
     String md5 = DatatypeConverter.printHexBinary(protocol.getMD5());
     ensurePath(zk, path);
@@ -64,8 +63,7 @@ public class AvroD2Helper {
     }
   }
 
-  public static void ensurePath(ZooKeeper zk, String path) throws KeeperException,
-      InterruptedException {
+  public static void ensurePath(ZooKeeper zk, String path) throws InterruptedException, KeeperException {
     int index = path.lastIndexOf("/");
     if (index > 0) {
       ensurePath(zk, path.substring(0, index));
@@ -100,8 +98,8 @@ public class AvroD2Helper {
     return getProtocolZkPath(protocol.getNamespace(), protocol.getName()) + "/versions";
   }
 
-  public static Protocol readProtocolFromZk(ZooKeeper zk, String namespace, String name,
-      String md5) throws KeeperException, InterruptedException {
+  public static Protocol readProtocolFromZk(ZooKeeper zk, String namespace, String name, String md5)
+      throws InterruptedException, KeeperException {
     String versionPath = getProtocolZkPath(namespace, name) + "/versions/" + md5;
     byte[] data = zk.getData(versionPath, false, null);
     String schema = new String(data, Constants.UTF8);

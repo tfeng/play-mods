@@ -32,17 +32,14 @@ import kafka.utils.ZkUtils;
  */
 public class KafkaUtils {
 
-  public static void createTopic(String zkServers, int sessionTimeout, int connectionTimeout,
-      String topic, int partitions, int replicationFactor) {
-    ZkClient zkClient = new ZkClient(zkServers, sessionTimeout, connectionTimeout,
-        new ZkStringSerializer());
+  public static void createTopic(String zkServers, int sessionTimeout, int connectionTimeout, String topic,
+      int partitions, int replicationFactor) {
+    ZkClient zkClient = new ZkClient(zkServers, sessionTimeout, connectionTimeout, new ZkStringSerializer());
     ZkUtils.setupCommonPaths(zkClient);
     AdminUtils.createTopic(zkClient, topic, 1, 1, new Properties());
   }
 
-  public static void createTopic(String zkServers, String topic, int partitions,
-      int replicationFactor) {
-    createTopic(zkServers, Integer.MAX_VALUE, Integer.MAX_VALUE, topic, partitions,
-        replicationFactor);
+  public static void createTopic(String zkServers, String topic, int partitions, int replicationFactor) {
+    createTopic(zkServers, Integer.MAX_VALUE, Integer.MAX_VALUE, topic, partitions, replicationFactor);
   }
 }

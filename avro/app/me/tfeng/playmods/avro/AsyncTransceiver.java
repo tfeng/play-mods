@@ -32,6 +32,6 @@ import play.libs.F.Promise;
  */
 public interface AsyncTransceiver {
 
-  Promise<List<ByteBuffer>> transceive(List<ByteBuffer> request,
-      RequestPreparer postRequestPreparer) throws IOException;
+  Promise<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer)
+      throws IOException;
 }

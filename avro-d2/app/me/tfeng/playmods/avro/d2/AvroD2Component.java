@@ -189,8 +189,7 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
       } catch (Exception e) {
         throw new RuntimeException("Unable to initialize server", e);
       }
-      AvroD2Server server = new AvroD2Server(protocol, url, zk, scheduler,
-          serverRegisterRetryDelay);
+      AvroD2Server server = new AvroD2Server(protocol, url, zk, scheduler, serverRegisterRetryDelay);
       server.register();
       servers.add(server);
     }
@@ -201,8 +200,8 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
       try {
         server.close();
       } catch (Exception e) {
-        LOG.error("Unable to close server for " + server.getProtocol().getName() + " at "
-            + server.getUrl() + "; ignoring");
+        LOG.error("Unable to close server for " + server.getProtocol().getName() + " at " + server.getUrl()
+            + "; ignoring");
       }
     });
     servers.clear();

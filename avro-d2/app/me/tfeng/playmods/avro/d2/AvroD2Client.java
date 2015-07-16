@@ -139,8 +139,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
       }
 
       if (serverUrls.isEmpty()) {
-        LOG.warn("Unable to get any server URL for protocol " + protocol.getName()
-            + "; retry later");
+        LOG.warn("Unable to get any server URL for protocol " + protocol.getName() + "; retry later");
         scheduleRefresh();
       }
     }
@@ -154,8 +153,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
     scheduler.schedule(this::refresh, clientRefreshRetryDelay, TimeUnit.MILLISECONDS);
   }
 
-  private synchronized AsyncRequestor setupRequest() throws IOException, KeeperException,
-      InterruptedException {
+  private synchronized AsyncRequestor setupRequest() throws IOException, InterruptedException, KeeperException {
     if (!refreshed) {
       refreshed = true;
       refresh();
@@ -166,7 +164,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
       isVersionRegistered = true;
     }
 
-    return requestorFactory.create(protocol,
-        transceiverFactory.create(protocol, getNextServerUrl()), data, useGenericRecord);
+    return requestorFactory.create(protocol, transceiverFactory.create(protocol, getNextServerUrl()), data,
+        useGenericRecord);
   }
 }

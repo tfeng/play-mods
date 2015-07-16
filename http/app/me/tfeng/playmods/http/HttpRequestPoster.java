@@ -49,8 +49,8 @@ public class HttpRequestPoster implements RequestPoster {
   private ClientFactory clientFactory;
 
   @Override
-  public Promise<WSResponse> postRequest(URL url, String contentType, byte[] body,
-      RequestPreparer requestPreparer) throws IOException {
+  public Promise<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
+      throws IOException {
     scala.concurrent.Promise<WSResponse> scalaPromise = scala.concurrent.Promise$.MODULE$.apply();
     BoundRequestBuilder builder = clientFactory.create()
         .preparePost(url.toString())

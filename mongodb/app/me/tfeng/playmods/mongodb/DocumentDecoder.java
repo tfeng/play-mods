@@ -116,8 +116,7 @@ public class DocumentDecoder extends Decoder {
     private void initializeFieldNameMap(Schema schema) {
       Class<?> recordClass = data.getClass(schema);
       if (recordClass == null) {
-        LOG.warn("Unable to load class " + SpecificData.getClassName(schema)
-            + "; skipping java annotation processing");
+        LOG.warn("Unable to load class " + SpecificData.getClassName(schema) + "; skipping java annotation processing");
         fieldNameMap = Collections.emptyMap();
       } else {
         List<Field> fields = schema.getFields();
@@ -247,8 +246,7 @@ public class DocumentDecoder extends Decoder {
     ByteBuffer buffer = readBytes(null);
     byte[] data = buffer.array();
     if (data.length != length) {
-      throw new IOException("Binary data of length " + length + " is expected; actual length is "
-          + data.length);
+      throw new IOException("Binary data of length " + length + " is expected; actual length is " + data.length);
     }
     System.arraycopy(data, 0, bytes, start, length);
   }
@@ -271,8 +269,7 @@ public class DocumentDecoder extends Decoder {
 
     List<Schema> types = schema.getTypes();
     if (types.size() != 2 || !types.stream().anyMatch(type -> type.getType() == Type.NULL)) {
-      throw new IOException(
-          "MongoDb module can only handle union of null and one other type; schema " + schema
+      throw new IOException("MongoDb module can only handle union of null and one other type; schema " + schema
           + " is not supported");
     }
 

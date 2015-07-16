@@ -49,13 +49,13 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
 
   private static final String ACCESS_TOKEN = "access_token";
 
-  private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
-
   private static final String AUTHORIZATION_HEADER = "authorization";
 
   private static final String BEARER = "bearer";
 
   private static final ALogger LOG = Logger.of(OAuth2AuthenticationAction.class);
+
+  private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
 
   private final OAuth2Component oauth2Component;
 
@@ -71,8 +71,7 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
 
   protected Promise<Result> authorizeAndCall(Context context, Action<?> delegate)
       throws Throwable {
-    Authentication currentAuthentication =
-        SecurityContextHolder.getContext().getAuthentication();
+    Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
     try {
       Request request = context.request();
       String token = getAuthorizationToken(request);
@@ -135,16 +134,8 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     Set<String> scopes = client.getScopes().stream()
         .map(scope -> scope.toString())
         .collect(Collectors.toSet());
-    return new OAuth2Request(
-        Collections.emptyMap(),
-        client.getId().toString(),
-        authorities,
-        true,
-        scopes,
-        Collections.emptySet(),
-        null,
-        Collections.emptySet(),
-        Collections.emptyMap());
+    return new OAuth2Request(Collections.emptyMap(), client.getId().toString(), authorities, true, scopes,
+        Collections.emptySet(), null, Collections.emptySet(), Collections.emptyMap());
   }
 
   protected Result handleAuthenticationError(Throwable t) throws Throwable {

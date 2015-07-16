@@ -41,8 +41,8 @@ public class HandshakingProtocolVersionResolver implements ProtocolVersionResolv
 
   static {
     try {
-      HANDSHAKE_METHOD = Responder.class.getDeclaredMethod("handshake", Decoder.class,
-          Encoder.class, Transceiver.class);
+      HANDSHAKE_METHOD = Responder.class.getDeclaredMethod("handshake", Decoder.class, Encoder.class,
+          Transceiver.class);
       HANDSHAKE_METHOD.setAccessible(true);
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException("Unable to get handshake method", e);
@@ -50,8 +50,7 @@ public class HandshakingProtocolVersionResolver implements ProtocolVersionResolv
   }
 
   @Override
-  public Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection)
-      throws IOException {
+  public Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection) throws IOException {
     try {
       return (Protocol) HANDSHAKE_METHOD.invoke(responder, in, out, connection);
     } catch (IllegalAccessException e) {
@@ -60,8 +59,7 @@ public class HandshakingProtocolVersionResolver implements ProtocolVersionResolv
       if (e.getTargetException() instanceof IOException) {
         throw (IOException) e.getTargetException();
       } else {
-        throw new RuntimeException("Handshake in responder raised an exception",
-            e.getTargetException());
+        throw new RuntimeException("Handshake in responder raised an exception", e.getTargetException());
       }
     }
   }

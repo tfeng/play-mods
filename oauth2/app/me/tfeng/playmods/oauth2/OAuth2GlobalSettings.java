@@ -48,8 +48,7 @@ public class OAuth2GlobalSettings extends SpringGlobalSettings {
       return Promise.pure(Results.unauthorized());
     } else if (cause instanceof OAuth2Exception) {
       OAuth2Exception oauth2Exception = (OAuth2Exception) cause;
-      return Promise.pure(Results.status(oauth2Exception.getHttpErrorCode(),
-          oauth2Exception.getMessage()));
+      return Promise.pure(Results.status(oauth2Exception.getHttpErrorCode(), oauth2Exception.getMessage()));
     } else {
       return super.onError(request, t);
     }

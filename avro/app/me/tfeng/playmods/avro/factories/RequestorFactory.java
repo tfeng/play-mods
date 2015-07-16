@@ -47,15 +47,14 @@ public class RequestorFactory {
   @Qualifier("play-mods.http.client-config-factory")
   private ClientConfigFactory clientConfigFactory;
 
-  public AsyncRequestor create(Class<?> interfaceClass, AsyncTransceiver transceiver,
-      SpecificData data, boolean useGenericRecord) throws IOException {
+  public AsyncRequestor create(Class<?> interfaceClass, AsyncTransceiver transceiver, SpecificData data,
+      boolean useGenericRecord) throws IOException {
     return create(data.getProtocol(interfaceClass), transceiver, data, useGenericRecord);
   }
 
   public AsyncRequestor create(Protocol protocol, AsyncTransceiver transceiver, SpecificData data,
       boolean useGenericRecord) throws IOException {
-    return new AsyncRequestor(protocol, transceiver, data,
-        clientConfigFactory.create().getRequestTimeout(),
+    return new AsyncRequestor(protocol, transceiver, data, clientConfigFactory.create().getRequestTimeout(),
         new AuthorizationPreservingRequestPreparer(), RESPONSE_PROCESSOR, useGenericRecord);
   }
 }

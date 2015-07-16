@@ -70,8 +70,7 @@ public class RecordConverter {
       Decoder decoder = new DocumentDecoder(recordClass, object);
       return reader.read(null, decoder);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to convert MongoDB object " + object
-          + " into Avro record", e);
+      throw new RuntimeException("Unable to convert MongoDB object " + object + " into Avro record", e);
     }
   }
 
@@ -81,19 +80,16 @@ public class RecordConverter {
       Decoder decoder = new DocumentDecoder(recordClass, document);
       return reader.read(null, decoder);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to convert MongoDB document " + document
-          + " into Avro record", e);
+      throw new RuntimeException("Unable to convert MongoDB document " + document + " into Avro record", e);
     }
   }
 
-  public static Record toRecord(Schema schema, BSONObject object, ClassLoader classLoader)
-      throws IOException {
+  public static Record toRecord(Schema schema, BSONObject object, ClassLoader classLoader) throws IOException {
     GenericDatumReader<Record> reader = new GenericDatumReader<>(schema);
     return reader.read(null, new DocumentDecoder(schema, object, classLoader));
   }
 
-  public static Record toRecord(Schema schema, Document document, ClassLoader classLoader)
-      throws IOException {
+  public static Record toRecord(Schema schema, Document document, ClassLoader classLoader) throws IOException {
     GenericDatumReader<Record> reader = new GenericDatumReader<>(schema);
     return reader.read(null, new DocumentDecoder(schema, document, classLoader));
   }
@@ -111,11 +107,8 @@ public class RecordConverter {
   private static Object getDocument(Schema schema, Object object) {
     if (schema.getType() == Type.UNION) {
       List<Schema> types = schema.getTypes();
-      if (types.size() != 2
-          && types.get(0).getType() != Type.NULL
-          && types.get(1).getType() != Type.NULL) {
-        throw new RuntimeException(
-            "In a union type, only null unioned with exactly one other type is supported: "
+      if (types.size() != 2 && types.get(0).getType() != Type.NULL && types.get(1).getType() != Type.NULL) {
+        throw new RuntimeException("In a union type, only null unioned with exactly one other type is supported: "
                 + schema);
       }
       if (types.get(0).getType() == Type.NULL) {
@@ -144,8 +137,7 @@ public class RecordConverter {
       if (mongoClassName == null && mongoType == null) {
         return object;
       } else if (mongoClassName != null && mongoType != null) {
-        throw new RuntimeException("mongo-class and mongo-type should not be both specified: "
-            + schema);
+        throw new RuntimeException("mongo-class and mongo-type should not be both specified: " + schema);
       } else {
         try {
           Class<?> mongoClass;
@@ -167,14 +159,12 @@ public class RecordConverter {
   }
 
   private static List<Object> getDocuments(Schema schema, Collection<Object> collection) {
-    return collection.stream().map(object -> getDocument(schema.getElementType(), object))
-        .collect(Collectors.toList());
+    return collection.stream().map(object -> getDocument(schema.getElementType(), object)).collect(Collectors.toList());
   }
 
   private static Map<String, Object> getDocuments(Schema schema, Map<String, Object> map) {
     Map<String, Object> newMap = new HashMap<>(map.size());
-    map.entrySet().forEach(
-        entry -> newMap.put(entry.getKey(), getDocument(schema.getValueType(), entry.getValue())));
+    map.entrySet().forEach(entry -> newMap.put(entry.getKey(), getDocument(schema.getValueType(), entry.getValue())));
     return newMap;
   }
 }

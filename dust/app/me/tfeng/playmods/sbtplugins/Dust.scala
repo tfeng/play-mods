@@ -31,6 +31,5 @@ object Dust extends AutoPlugin {
 
   override lazy val projectSettings = settings
 
-  lazy val settings = SbtDust.settings ++ Seq(
-      addSbtPlugin("me.tfeng.play-mods" % "dust" % Versions.project))
+  lazy val settings = SbtDust.settings ++ Seq(addSbtPlugin("me.tfeng.play-mods" % "dust" % Versions.project))
 }

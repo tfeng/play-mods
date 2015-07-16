@@ -77,16 +77,14 @@ public class SpringModule implements Module {
 
   public static final String CONFIG_LOCATIONS_KEY = "play-mods.spring.config-locations";
 
-  public static final List<String> DEFAULT_CONFIG_LOCATIONS =
-      Collections.singletonList("classpath*:spring/**/*.xml");
+  public static final List<String> DEFAULT_CONFIG_LOCATIONS = Collections.singletonList("classpath*:spring/**/*.xml");
 
   public static final String DEFAULT_PROFILES_KEY = "play-mods.spring.default-profiles";
 
   public static final List<String> INTERNAL_CONFIG_LOCATIONS =
       Collections.singletonList("classpath*:play-mods.spring/**/*.xml");
 
-  private static <T> void bind(ConfigurableListableBeanFactory beanFactory, Binder binder,
-      Class<T> type, String name) {
+  private static <T> void bind(ConfigurableListableBeanFactory beanFactory, Binder binder, Class<T> type, String name) {
     if (beanFactory.getBeansOfType(type).size() == 1) {
       Provider<? extends T> provider = new BeanProvider<>(beanFactory, type, name);
       binder.bind(type).toProvider(provider);
@@ -110,8 +108,7 @@ public class SpringModule implements Module {
     ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
     Arrays.stream(beanFactory.getBeanDefinitionNames()).forEach(name -> {
       BeanDefinition definition = beanFactory.getBeanDefinition(name);
-      if (definition.isAutowireCandidate()
-          && definition.getRole() == AbstractBeanDefinition.ROLE_APPLICATION) {
+      if (definition.isAutowireCandidate() && definition.getRole() == AbstractBeanDefinition.ROLE_APPLICATION) {
         Class<?> type = beanFactory.getType(name);
         if (!type.isInterface()) {
           bind(beanFactory, binder, type, name);
@@ -125,8 +122,7 @@ public class SpringModule implements Module {
     List<String> activeProfiles = configuration.getStringList(ACTIVE_PROFILES_KEY);
     List<String> defaultProfiles = configuration.getStringList(DEFAULT_PROFILES_KEY);
     if (activeProfiles != null) {
-      applicationContext.getEnvironment().setActiveProfiles(
-          activeProfiles.toArray(new String[activeProfiles.size()]));
+      applicationContext.getEnvironment().setActiveProfiles(activeProfiles.toArray(new String[activeProfiles.size()]));
     }
     if (defaultProfiles != null) {
       applicationContext.getEnvironment().setDefaultProfiles(
@@ -140,8 +136,7 @@ public class SpringModule implements Module {
   protected String[] getSpringConfigLocations(Configuration configuration) {
     List<String> springConfigLocations = Lists.newArrayList();
     springConfigLocations.addAll(INTERNAL_CONFIG_LOCATIONS);
-    springConfigLocations.addAll(configuration.getStringList(CONFIG_LOCATIONS_KEY,
-        DEFAULT_CONFIG_LOCATIONS));
+    springConfigLocations.addAll(configuration.getStringList(CONFIG_LOCATIONS_KEY, DEFAULT_CONFIG_LOCATIONS));
     return springConfigLocations.toArray(new String[springConfigLocations.size()]);
   }
 }

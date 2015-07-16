@@ -50,8 +50,7 @@ import scala.concurrent.ExecutionContext;
 @Component("play-mods.avro.component")
 public class AvroComponent implements Startable {
 
-  public static final String PROTOCOL_IMPLEMENTATIONS_KEY =
-      "play-mods.avro.protocol-implementations";
+  public static final String PROTOCOL_IMPLEMENTATIONS_KEY = "play-mods.avro.protocol-implementations";
 
   private static final ALogger LOG = Logger.of(AvroComponent.class);
 
@@ -101,8 +100,7 @@ public class AvroComponent implements Startable {
   }
 
   public Map<Class<?>, Object> getProtocolImplementations() {
-    return protocolImplementations == null ? null :
-        Collections.unmodifiableMap(protocolImplementations);
+    return protocolImplementations == null ? null : Collections.unmodifiableMap(protocolImplementations);
   }
 
   @Override

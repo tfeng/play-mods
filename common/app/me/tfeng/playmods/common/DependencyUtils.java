@@ -36,8 +36,7 @@ import com.google.common.collect.HashMultimap;
  */
 public class DependencyUtils {
 
-  public static <T> List<T> dependencySort(Collection<T> collection,
-      Comparator<T> dependencyComparator) {
+  public static <T> List<T> dependencySort(Collection<T> collection, Comparator<T> dependencyComparator) {
     List<T> result = new ArrayList<>(collection.size());
 
     HashMultimap<T, T> dependencies = HashMultimap.create();
@@ -64,8 +63,7 @@ public class DependencyUtils {
       }
       elements.remove(next);
       dependencies.removeAll(next);
-      for (Iterator<Entry<T, T>> iterator = dependencies.entries().iterator();
-          iterator.hasNext();) {
+      for (Iterator<Entry<T, T>> iterator = dependencies.entries().iterator(); iterator.hasNext();) {
         if (next == iterator.next().getValue()) {
           iterator.remove();
         }

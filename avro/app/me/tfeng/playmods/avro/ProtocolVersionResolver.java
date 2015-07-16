@@ -33,6 +33,5 @@ import org.apache.avro.ipc.Transceiver;
  */
 public interface ProtocolVersionResolver {
 
-  Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection)
-      throws IOException;
+  Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection) throws IOException;
 }

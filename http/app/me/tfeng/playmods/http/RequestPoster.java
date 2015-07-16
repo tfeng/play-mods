@@ -31,6 +31,6 @@ import play.libs.ws.WSResponse;
  */
 public interface RequestPoster {
 
-  Promise<WSResponse> postRequest(URL url, String contentType, byte[] body,
-      RequestPreparer requestPreparer) throws IOException;
+  Promise<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
+      throws IOException;
 }

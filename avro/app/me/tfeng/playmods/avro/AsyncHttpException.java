@@ -29,6 +29,7 @@ import java.net.URL;
 public class AsyncHttpException extends IOException {
 
   private static final long serialVersionUID = 1L;
+
   private final int statusCode;
   private final URL url;
 

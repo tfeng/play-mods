@@ -104,27 +104,23 @@ public class ApplicationManager implements ApplicationContextAware {
   }
 
   protected List<Startable> findStartables() {
-    BeanDefinitionRegistry registry =
-        (BeanDefinitionRegistry) getApplicationContext().getAutowireCapableBeanFactory();
-    Set<Entry<String, Startable>> entries =
-        getApplicationContext().getBeansOfType(Startable.class).entrySet();
+    BeanDefinitionRegistry registry = (BeanDefinitionRegistry) getApplicationContext().getAutowireCapableBeanFactory();
+    Set<Entry<String, Startable>> entries = getApplicationContext().getBeansOfType(Startable.class).entrySet();
     List<Entry<String, Startable>> sortedEntries =
         DependencyUtils.dependencySort(entries, new DependencyComparator(registry));
-    return Collections.unmodifiableList(
-        sortedEntries.stream().map(Entry::getValue).collect(Collectors.toList()));
+    return Collections.unmodifiableList(sortedEntries.stream().map(Entry::getValue).collect(Collectors.toList()));
   }
 
   protected void start(Application application) {
     startables = findStartables();
 
-    startables.stream().filter(startable -> startable instanceof ExtendedStartable)
-        .forEach(startable -> {
-          try {
-            ((ExtendedStartable) startable).beforeStart();
-          } catch (Throwable t) {
-            startableErrorHandler.onStartError(application, startable, t);
-          }
-        });
+    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable -> {
+      try {
+        ((ExtendedStartable) startable).beforeStart();
+      } catch (Throwable t) {
+        startableErrorHandler.onStartError(application, startable, t);
+      }
+    });
 
     startables.stream().forEach(startable -> {
       try {
@@ -134,19 +130,17 @@ public class ApplicationManager implements ApplicationContextAware {
       }
     });
 
-    startables.stream().filter(startable -> startable instanceof ExtendedStartable)
-        .forEach(startable -> {
-          try {
-            ((ExtendedStartable) startable).afterStart();
-          } catch (Throwable t) {
-            startableErrorHandler.onStartError(application, startable, t);
-          }
-        });
+    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable -> {
+      try {
+        ((ExtendedStartable) startable).afterStart();
+      } catch (Throwable t) {
+        startableErrorHandler.onStartError(application, startable, t);
+      }
+    });
   }
 
   protected void stop(Application application) {
-    for (ListIterator<Startable> iterator = startables.listIterator(startables.size());
-         iterator.hasPrevious();) {
+    for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       if (startable instanceof ExtendedStartable) {
         try {
@@ -157,8 +151,7 @@ public class ApplicationManager implements ApplicationContextAware {
       }
     }
 
-    for (ListIterator<Startable> iterator = startables.listIterator(startables.size());
-         iterator.hasPrevious();) {
+    for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       try {
         startable.onStop();
@@ -167,8 +160,7 @@ public class ApplicationManager implements ApplicationContextAware {
       }
     }
 
-    for (ListIterator<Startable> iterator = startables.listIterator(startables.size());
-         iterator.hasPrevious();) {
+    for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       if (startable instanceof ExtendedStartable) {
         try {

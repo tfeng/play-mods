@@ -57,8 +57,7 @@ public class MongoDbTypeConverter {
     public Long convertFromMongoDbType(BSONTimestamp data) {
       int inc = data.getInc();
       if (inc < 0 || inc >= 1000) {
-        throw new RuntimeException(
-            "Overflow occurs while converting BSONTimestamp into long: " + data);
+        throw new RuntimeException("Overflow occurs while converting BSONTimestamp into long: " + data);
       }
       return (long) data.getTime() * 1000 + inc;
     }
@@ -155,8 +154,7 @@ public class MongoDbTypeConverter {
       return dataClass.cast(object);
     } else {
       @SuppressWarnings("unchecked")
-      Converter<S, T> converter =
-          (Converter<S, T>) CONVERTER_MAP.get(ImmutablePair.of(object.getClass(), dataClass));
+      Converter<S, T> converter = (Converter<S, T>) CONVERTER_MAP.get(ImmutablePair.of(object.getClass(), dataClass));
       if (converter != null) {
         return converter.convertFromMongoDbType(object);
       } else if (String.class.isAssignableFrom(dataClass) && object instanceof DBObject) {
@@ -174,8 +172,7 @@ public class MongoDbTypeConverter {
       return mongoClass.cast(data);
     } else {
       @SuppressWarnings("unchecked")
-      Converter<S, T> converter =
-          (Converter<S, T>) CONVERTER_MAP.get(ImmutablePair.of(mongoClass, data.getClass()));
+      Converter<S, T> converter = (Converter<S, T>) CONVERTER_MAP.get(ImmutablePair.of(mongoClass, data.getClass()));
       if (converter != null) {
         return converter.convertToMongoDbType(data);
       } else if (DBObject.class.isAssignableFrom(mongoClass) && data instanceof String) {

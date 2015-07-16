@@ -29,9 +29,9 @@ import org.webjars.WebJarAssetLocator;
 @Component("play-mods.dust.asset-locator")
 public class AssetLocator {
 
-  private WebJarAssetLocator assetLocator =
+  private static final WebJarAssetLocator assetLocator =
       new WebJarAssetLocator(WebJarAssetLocator.getFullPathIndex(Pattern.compile(".*\\.js$"),
-          getClass().getClassLoader()));
+          AssetLocator.class.getClassLoader()));
 
   public InputStream getResource(String fileName) {
      return getClass().getClassLoader().getResourceAsStream(assetLocator.getFullPath(fileName));

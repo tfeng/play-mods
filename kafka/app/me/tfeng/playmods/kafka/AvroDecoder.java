@@ -53,8 +53,7 @@ public class AvroDecoder<T extends IndexedRecord> implements Decoder<T> {
     try {
       return AvroHelper.decodeRecord(recordClass, data);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to decode Kafka event " +
-          new String(data, Constants.UTF8));
+      throw new RuntimeException("Unable to decode Kafka event " + new String(data, Constants.UTF8));
     }
   }
 

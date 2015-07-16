@@ -45,22 +45,18 @@ public class ResponderFactory {
   private AvroD2ProtocolVersionResolver protocolVersionResolver;
 
   public AsyncResponder create(Class<?> iface, Object impl) {
-    return new AsyncResponder(iface, impl, avroComponent.getExecutionContext(),
-        protocolVersionResolver);
+    return new AsyncResponder(iface, impl, avroComponent.getExecutionContext(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Class<?> iface, Object impl, SpecificData data) {
-    return new AsyncResponder(iface, impl, data, avroComponent.getExecutionContext(),
-        protocolVersionResolver);
+    return new AsyncResponder(iface, impl, data, avroComponent.getExecutionContext(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Protocol protocol, Object impl) {
-    return new AsyncResponder(protocol, impl, avroComponent.getExecutionContext(),
-        protocolVersionResolver);
+    return new AsyncResponder(protocol, impl, avroComponent.getExecutionContext(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Protocol protocol, Object impl, SpecificData data) {
-    return new AsyncResponder(protocol, impl, data, avroComponent.getExecutionContext(),
-        protocolVersionResolver);
+    return new AsyncResponder(protocol, impl, data, avroComponent.getExecutionContext(), protocolVersionResolver);
   }
 }

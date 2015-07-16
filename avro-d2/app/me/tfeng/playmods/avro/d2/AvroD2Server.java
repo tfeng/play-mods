@@ -45,15 +45,15 @@ public class AvroD2Server implements Watcher {
 
   protected volatile String nodePath;
 
-  private final ZooKeeper zk;
+  private final Protocol protocol;
 
   private final ScheduledExecutorService scheduler;
 
-  private final Protocol protocol;
+  private final long serverRegisterRetryDelay;
 
   private final URL url;
 
-  private final long serverRegisterRetryDelay;
+  private final ZooKeeper zk;
 
   public AvroD2Server(Protocol protocol, URL url, ZooKeeper zk, ScheduledExecutorService scheduler,
       long serverRegisterRetryDelay) {
@@ -109,8 +109,8 @@ public class AvroD2Server implements Watcher {
       }
     } catch (Exception e) {
       if (e instanceof KeeperException) {
-        LOG.warn("Unable to register server for " + protocol.getName() + " (code = "
-            + ((KeeperException) e).code() + "); retry later");
+        LOG.warn("Unable to register server for " + protocol.getName() + " (code = " + ((KeeperException) e).code()
+            + "); retry later");
       } else {
         LOG.warn("Unable to register server for " + protocol.getName() + "; retry later", e);
       }

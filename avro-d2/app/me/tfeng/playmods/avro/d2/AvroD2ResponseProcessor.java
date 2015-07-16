@@ -75,8 +75,8 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
       String serverHash = DatatypeConverter.printHexBinary(handshake.getServerHash().bytes());
       serverProtocol = protocolCache.get(serverHash);
       if (serverProtocol == null) {
-        serverProtocol = AvroD2Helper.readProtocolFromZk(avroD2Component.getZooKeeper(),
-            localProtocol.getNamespace(), localProtocol.getName(), serverHash);
+        serverProtocol = AvroD2Helper.readProtocolFromZk(avroD2Component.getZooKeeper(), localProtocol.getNamespace(),
+            localProtocol.getName(), serverHash);
         protocolCache.put(serverHash, serverProtocol);
       }
     }

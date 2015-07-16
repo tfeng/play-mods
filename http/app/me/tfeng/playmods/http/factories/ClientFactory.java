@@ -62,7 +62,6 @@ public class ClientFactory implements InitializingBean, Startable {
 
   @Override
   public void onStart() throws Throwable {
-
   }
 
   @Override

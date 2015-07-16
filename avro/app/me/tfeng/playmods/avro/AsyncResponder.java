@@ -57,11 +57,9 @@ public class AsyncResponder extends SpecificResponder {
 
   private static final Schema META = Schema.createMap(Schema.create(Schema.Type.BYTES));
 
-  public static final GenericDatumReader<Map<String,ByteBuffer>> META_READER =
-      new GenericDatumReader<>(META);
+  public static final GenericDatumReader<Map<String,ByteBuffer>> META_READER = new GenericDatumReader<>(META);
 
-  public static final GenericDatumWriter<Map<String,ByteBuffer>> META_WRITER =
-      new GenericDatumWriter<>(META);
+  public static final GenericDatumWriter<Map<String,ByteBuffer>> META_WRITER = new GenericDatumWriter<>(META);
 
   private final ExecutionContext executionContext;
 
@@ -77,8 +75,8 @@ public class AsyncResponder extends SpecificResponder {
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public AsyncResponder(Class<?> iface, Object impl, SpecificData data,
-      ExecutionContext executionContext, ProtocolVersionResolver protocolVersionResolver) {
+  public AsyncResponder(Class<?> iface, Object impl, SpecificData data, ExecutionContext executionContext,
+      ProtocolVersionResolver protocolVersionResolver) {
     super(iface, impl, data);
     this.impl = impl;
     this.executionContext = executionContext;
@@ -93,8 +91,8 @@ public class AsyncResponder extends SpecificResponder {
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public AsyncResponder(Protocol protocol, Object impl, SpecificData data,
-      ExecutionContext executionContext, ProtocolVersionResolver protocolVersionResolver) {
+  public AsyncResponder(Protocol protocol, Object impl, SpecificData data, ExecutionContext executionContext,
+      ProtocolVersionResolver protocolVersionResolver) {
     super(protocol, impl, data);
     this.impl = impl;
     this.executionContext = executionContext;
@@ -157,8 +155,7 @@ public class AsyncResponder extends SpecificResponder {
     } else {
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
       return Promise.promise(() -> {
-        Authentication currentAuthentication =
-            SecurityContextHolder.getContext().getAuthentication();
+        Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(authentication);
         try {
           Object result = respond(m, request);
@@ -179,8 +176,8 @@ public class AsyncResponder extends SpecificResponder {
     return protocolVersionResolver.resolve(this, in, out, connection);
   }
 
-  private void processResult(ByteBufferOutputStream bbo, BinaryEncoder out, RPCContext context,
-      Message m, List<ByteBuffer> handshake, Object response, Exception error) throws Exception {
+  private void processResult(ByteBufferOutputStream bbo, BinaryEncoder out, RPCContext context, Message m,
+      List<ByteBuffer> handshake, Object response, Exception error) throws Exception {
     out.writeBoolean(error != null);
     if (error == null) {
       writeResponse(m.getResponse(), response, out);

@@ -58,8 +58,7 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
 
   private final URL url;
 
-  public AsyncHttpTransceiver(URL url, ExecutionContext executionContext,
-      RequestPoster requestPoster) {
+  public AsyncHttpTransceiver(URL url, ExecutionContext executionContext, RequestPoster requestPoster) {
     super(url);
     this.url = url;
     this.executionContext = executionContext;
@@ -67,8 +66,7 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
   }
 
   @Override
-  public Promise<List<ByteBuffer>> transceive(List<ByteBuffer> request,
-      RequestPreparer postRequestPreparer) {
+  public Promise<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer) {
     return asyncReadBuffers(asyncWriteBuffers(request, postRequestPreparer));
   }
 
@@ -93,14 +91,12 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     });
   }
 
-  protected Promise<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers,
-      RequestPreparer postRequestPreparer) {
+  protected Promise<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers, RequestPreparer postRequestPreparer) {
     return Promise.promise(() -> {
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       writeBuffers(buffers, outputStream);
       return outputStream;
-    }, executionContext)
-    .flatMap(outputStream -> postRequest(url, outputStream.toByteArray(), postRequestPreparer));
+    }, executionContext).flatMap(outputStream -> postRequest(url, outputStream.toByteArray(), postRequestPreparer));
   }
 
   protected String getContentType() {

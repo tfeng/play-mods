@@ -50,8 +50,7 @@ public class RequestorFactory {
 
   public AsyncRequestor create(Protocol protocol, AvroD2Transceiver transceiver, SpecificData data,
       boolean useGenericRecord) throws IOException {
-    return new AsyncRequestor(protocol, transceiver, data,
-        clientConfigFactory.create().getRequestTimeout(),
+    return new AsyncRequestor(protocol, transceiver, data, clientConfigFactory.create().getRequestTimeout(),
         new AuthorizationPreservingRequestPreparer(), responseProcessor, useGenericRecord);
   }
 }

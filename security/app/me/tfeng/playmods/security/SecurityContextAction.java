@@ -49,8 +49,7 @@ public class SecurityContextAction extends Action<SecurityContext> {
   public Promise<Result> call(Context context) throws Throwable {
     SecurityContextStore securityContextStore = securityComponent.getContextStore();
 
-    String cookieName = configuration.value().isEmpty() ? securityComponent.getCookieName()
-        : configuration.value();
+    String cookieName = configuration.value().isEmpty() ? securityComponent.getCookieName() : configuration.value();
     Cookie cookie = context == null ? null : context.request().cookie(cookieName);
     String id = cookie == null ? null : cookie.value();
 
@@ -59,8 +58,7 @@ public class SecurityContextAction extends Action<SecurityContext> {
     }
 
     return delegate.call(context).map(result -> {
-      org.springframework.security.core.context.SecurityContext currentContext =
-          SecurityContextHolder.getContext();
+      org.springframework.security.core.context.SecurityContext currentContext = SecurityContextHolder.getContext();
       SecurityContextHolder.clearContext();
       org.springframework.security.core.context.SecurityContext emptyContext =
           SecurityContextHolder.getContext();
