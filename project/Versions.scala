@@ -18,7 +18,7 @@ object Versions {
 
   val mockito = "1.10.19"
 
-  val mongoDb = "3.0.2"
+  val mongoDb = "3.0.3"
 
   val sbtPlugins = "0.4.1-SNAPSHOT"
 
@@ -32,7 +32,7 @@ object Versions {
 
   val springSecurityOauth = "2.0.7.RELEASE"
 
-  val webjarsLocator = "0.26"
+  val webjarsLocator = "0.27"
 
   val zookeeper = "3.4.6"
 }
