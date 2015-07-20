@@ -38,7 +38,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import me.tfeng.playmods.common.DependencyUtils;
-import play.Application;
 import play.Play;
 
 /**
@@ -109,79 +108,49 @@ public class ApplicationManager implements ApplicationContextAware {
     return Collections.unmodifiableList(sortedEntries.stream().map(Entry::getValue).collect(Collectors.toList()));
   }
 
-  protected void start(Application application) {
+  protected void start() {
     startables = findStartables();
 
-    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable -> {
-      startableInterceptors.stream().forEach(interceptor -> interceptor.beginStart(startable));
-      try {
-        ((ExtendedStartable) startable).beforeStart();
-      } catch (Throwable t) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
-      }
-    });
+    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable ->
+        ((ExtendedStartable) startable).beforeStart());
 
     startables.stream().forEach(startable -> {
-      if (!(startable instanceof ExtendedStartable)) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStart(startable));
-      }
+      startableInterceptors.stream().forEach(interceptor -> interceptor.beginStart(startable));
       try {
         startable.onStart();
+        startableInterceptors.stream().forEach(interceptor -> interceptor.endStart(startable));
       } catch (Throwable t) {
         startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
-      }
-      if (!(startable instanceof ExtendedStartable)) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.endStart(startable));
       }
     });
 
-    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable -> {
-      try {
-        ((ExtendedStartable) startable).afterStart();
-      } catch (Throwable t) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
-      }
-      startableInterceptors.stream().forEach(interceptor -> interceptor.endStart(startable));
-    });
+    startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable ->
+        ((ExtendedStartable) startable).afterStart());
   }
 
-  protected void stop(Application application) {
+  protected void stop() {
     for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       if (startable instanceof ExtendedStartable) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
-        try {
-          ((ExtendedStartable) startable).beforeStop();
-        } catch (Throwable t) {
-          startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
-        }
+        ((ExtendedStartable) startable).beforeStop();
       }
     }
 
     for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
-      if (!(startable instanceof ExtendedStartable)) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
-      }
+      startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
       try {
         startable.onStop();
+        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
       } catch (Throwable t) {
         startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
       }
-      if (!(startable instanceof ExtendedStartable)) {
-        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
-      }
     }
 
     for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       if (startable instanceof ExtendedStartable) {
-        try {
-          ((ExtendedStartable) startable).afterStop();
-        } catch (Throwable t) {
-          startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
-        }
-        startableInterceptors.stream().forEach(interceptor -> interceptor.endStop(startable));
+        ((ExtendedStartable) startable).afterStop();
       }
     }
   }

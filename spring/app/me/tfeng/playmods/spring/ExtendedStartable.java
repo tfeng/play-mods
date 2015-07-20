@@ -25,11 +25,11 @@ package me.tfeng.playmods.spring;
  */
 public interface ExtendedStartable extends Startable {
 
-  void afterStart() throws Throwable;
+  void afterStart();
 
-  void afterStop() throws Throwable;
+  void afterStop();
 
-  void beforeStart() throws Throwable;
+  void beforeStart();
 
-  void beforeStop() throws Throwable;
+  void beforeStop();
 }

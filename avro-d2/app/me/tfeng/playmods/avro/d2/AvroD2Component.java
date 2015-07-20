@@ -106,21 +106,21 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
   }
 
   @Override
-  public void afterStart() throws Throwable {
+  public void afterStart() {
     connect();
     startServers();
   }
 
   @Override
-  public void afterStop() throws Throwable {
+  public void afterStop() {
   }
 
   @Override
-  public void beforeStart() throws Throwable {
+  public void beforeStart() {
   }
 
   @Override
-  public void beforeStop() throws Throwable {
+  public void beforeStop() {
     stopServers();
   }
 

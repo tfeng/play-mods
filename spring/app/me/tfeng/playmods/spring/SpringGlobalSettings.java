@@ -39,12 +39,12 @@ public class SpringGlobalSettings extends GlobalSettings {
 
   @Override
   public void onStart(Application application) {
-    getApplicationManager(application).start(application);
+    getApplicationManager(application).start();
   }
 
   @Override
   public void onStop(Application application) {
-    getApplicationManager(application).stop(application);
+    getApplicationManager(application).stop();
   }
 
   private ApplicationManager getApplicationManager(Application application) {
