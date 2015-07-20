@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ApplicationContext;
@@ -80,9 +79,8 @@ public class ApplicationManager implements ApplicationContextAware {
 
   private ApplicationContext applicationContext;
 
-  @Autowired(required = false)
-  @Qualifier("play-mods.spring.startable-error-handler")
-  private StartableErrorHandler startableErrorHandler = new DefaultStartableErrorHandler();
+  @Autowired
+  private List<StartableInterceptor> startableInterceptors;
 
   private List<Startable> startables;
 
@@ -115,18 +113,25 @@ public class ApplicationManager implements ApplicationContextAware {
     startables = findStartables();
 
     startables.stream().filter(startable -> startable instanceof ExtendedStartable).forEach(startable -> {
+      startableInterceptors.stream().forEach(interceptor -> interceptor.beginStart(startable));
       try {
         ((ExtendedStartable) startable).beforeStart();
       } catch (Throwable t) {
-        startableErrorHandler.onStartError(application, startable, t);
+        startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
       }
     });
 
     startables.stream().forEach(startable -> {
+      if (!(startable instanceof ExtendedStartable)) {
+        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStart(startable));
+      }
       try {
         startable.onStart();
       } catch (Throwable t) {
-        startableErrorHandler.onStartError(application, startable, t);
+        startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
+      }
+      if (!(startable instanceof ExtendedStartable)) {
+        startableInterceptors.stream().forEach(interceptor -> interceptor.endStart(startable));
       }
     });
 
@@ -134,8 +139,9 @@ public class ApplicationManager implements ApplicationContextAware {
       try {
         ((ExtendedStartable) startable).afterStart();
       } catch (Throwable t) {
-        startableErrorHandler.onStartError(application, startable, t);
+        startableInterceptors.stream().forEach(interceptor -> interceptor.failStart(startable, t));
       }
+      startableInterceptors.stream().forEach(interceptor -> interceptor.endStart(startable));
     });
   }
 
@@ -143,20 +149,27 @@ public class ApplicationManager implements ApplicationContextAware {
     for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
       if (startable instanceof ExtendedStartable) {
+        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
         try {
           ((ExtendedStartable) startable).beforeStop();
         } catch (Throwable t) {
-          startableErrorHandler.onStopError(application, startable, t);
+          startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
         }
       }
     }
 
     for (ListIterator<Startable> iterator = startables.listIterator(startables.size()); iterator.hasPrevious();) {
       Startable startable = iterator.previous();
+      if (!(startable instanceof ExtendedStartable)) {
+        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
+      }
       try {
         startable.onStop();
       } catch (Throwable t) {
-        startableErrorHandler.onStopError(application, startable, t);
+        startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
+      }
+      if (!(startable instanceof ExtendedStartable)) {
+        startableInterceptors.stream().forEach(interceptor -> interceptor.beginStop(startable));
       }
     }
 
@@ -166,8 +179,9 @@ public class ApplicationManager implements ApplicationContextAware {
         try {
           ((ExtendedStartable) startable).afterStop();
         } catch (Throwable t) {
-          startableErrorHandler.onStopError(application, startable, t);
+          startableInterceptors.stream().forEach(interceptor -> interceptor.failStop(startable, t));
         }
+        startableInterceptors.stream().forEach(interceptor -> interceptor.endStop(startable));
       }
     }
   }

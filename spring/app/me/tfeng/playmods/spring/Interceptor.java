@@ -20,14 +20,9 @@
 
 package me.tfeng.playmods.spring;
 
-import play.Application;
-
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public interface StartableErrorHandler {
+public interface Interceptor {
 
-  void onStartError(Application application, Startable startable, Throwable t);
-
-  void onStopError(Application application, Startable startable, Throwable t);
 }
