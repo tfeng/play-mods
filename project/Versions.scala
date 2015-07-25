@@ -8,8 +8,6 @@ object Versions {
 
   val dustjs = "2.6.1"
 
-  val hadoop = "2.6.0"
-
   val hamcrest = "1.3"
 
   val httpComponents = "4.4.1"
@@ -24,11 +22,9 @@ object Versions {
 
   val scala = "2.10.5"
 
-  val spark = "1.3.1"
-
   val spring = "4.1.7.RELEASE"
 
-  val springSecurity = "4.0.1.RELEASE"
+  val springSecurity = "4.0.2.RELEASE"
 
   val springSecurityOauth = "2.0.7.RELEASE"
 
