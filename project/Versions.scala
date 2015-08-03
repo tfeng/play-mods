@@ -8,6 +8,8 @@ object Versions {
 
   val dustjs = "2.6.1"
 
+  val gremlin = "3.0.0.M9-incubating"
+
   val hamcrest = "1.3"
 
   val httpComponents = "4.4.1"
@@ -22,11 +24,13 @@ object Versions {
 
   val scala = "2.10.5"
 
-  val spring = "4.1.7.RELEASE"
+  val spring = "4.2.0.RELEASE"
 
   val springSecurity = "4.0.2.RELEASE"
 
   val springSecurityOauth = "2.0.7.RELEASE"
+
+  val titan = "0.9.0-M2"
 
   val webjarsLocator = "0.27"
 
