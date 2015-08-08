@@ -61,14 +61,14 @@ public class MongoDbStoreManager implements OrderedKeyValueStoreManager {
 
   private static final ALogger LOG = Logger.of(MongoDbStoreManager.class);
 
-  private final MongoDatabase mongoDb;
-
   @Value("${play-mods.titan.mongo-db-name}")
   private String dbName;
 
   @Autowired
   @Qualifier("play-mods.titan.mongo-client")
   private MongoClient mongoClient;
+
+  private final MongoDatabase mongoDb;
 
   private volatile Map<String, MongoDbKeyValueStore> stores = new ConcurrentHashMap<>();
 
@@ -92,7 +92,7 @@ public class MongoDbStoreManager implements OrderedKeyValueStoreManager {
     stores.values().forEach(store -> {
       try {
         store.clear();
-      } catch (BackendException e) {
+      } catch (Throwable e) {
         LOG.error("Unable to clear store " + store.getName() + " in store manager " + getName(), e);
       }
     });
@@ -105,7 +105,7 @@ public class MongoDbStoreManager implements OrderedKeyValueStoreManager {
     oldStores.values().stream().forEach(store -> {
       try {
         store.close();
-      } catch (BackendException e) {
+      } catch (Throwable e) {
         LOG.error("Unable to close store " + store.getName() + " in store manager " + getName(), e);
       }
     });

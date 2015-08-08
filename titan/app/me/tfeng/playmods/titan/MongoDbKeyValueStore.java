@@ -20,15 +20,30 @@
 
 package me.tfeng.playmods.titan;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.BulkWriteOptions;
+import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -40,14 +55,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyVal
 import com.thinkaurelius.titan.diskstorage.util.Hex;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.bson.Document;
-import org.bson.conversions.Bson;
+
 import play.Logger;
 import play.Logger.ALogger;
 
@@ -81,7 +89,7 @@ public class MongoDbKeyValueStore implements OrderedKeyValueStore {
       LOG.debug(name + ": clearing");
     }
 
-    collection.deleteMany(new Document());
+    collection.drop();
   }
 
   @Override
@@ -190,29 +198,27 @@ public class MongoDbKeyValueStore implements OrderedKeyValueStore {
 
   @Override
   public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException {
-    String keyHex = convertToHex(key);
-    String valueHex = convertToHex(value);
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(name + ": updating - " + new Document(ImmutableMap.of(ID_KEY, keyHex, VALUE_KEY, valueHex)));
-    }
-
-    Bson filter = Filters.eq(ID_KEY, keyHex);
-    Document document = new Document("$set", new Document(VALUE_KEY, valueHex));
-    collection.updateOne(filter, document, new UpdateOptions().upsert(true));
+    ReplaceOneModel<Document> model = createInsertModel(key, value);
+    collection.replaceOne(model.getFilter(), model.getReplacement(), model.getOptions());
   }
 
   public void mutate(KVMutation mutation, StoreTransaction txh) throws BackendException {
+    List<WriteModel<Document>> bulkWriteModel = Lists.newArrayListWithCapacity(mutation.getAdditions().size() + 1);
+
     List<String> deletions = mutation.getDeletions().stream().map(this::convertToHex).collect(Collectors.toList());
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(name + ": deleting keys - " + Arrays.toString(deletions.toArray()));
+    if (!deletions.isEmpty()) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(name + ": deleting keys - " + Arrays.toString(deletions.toArray()));
+      }
+      bulkWriteModel.add(new DeleteManyModel<>(Filters.in(ID_KEY, deletions)));
     }
 
-    collection.deleteMany(Filters.in(ID_KEY, deletions));
     for (KeyValueEntry entry : mutation.getAdditions()) {
-      insert(entry.getKey(), entry.getValue(), txh);
+      ReplaceOneModel<Document> insertModel = createInsertModel(entry.getKey(), entry.getValue());
+      bulkWriteModel.add(insertModel);
     }
+
+    collection.bulkWrite(bulkWriteModel, new BulkWriteOptions().ordered(false));
   }
 
   private StaticBuffer convertFromHex(String binary) {
@@ -221,5 +227,17 @@ public class MongoDbKeyValueStore implements OrderedKeyValueStore {
 
   private String convertToHex(StaticBuffer buffer) {
     return Hex.bytesToHex(buffer.getBytes(0, buffer.length()));
+  }
+
+  private ReplaceOneModel<Document> createInsertModel(StaticBuffer key, StaticBuffer value) {
+    String keyHex = convertToHex(key);
+    String valueHex = convertToHex(value);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(name + ": inserting - " + new Document(ImmutableMap.of(ID_KEY, keyHex, VALUE_KEY, valueHex)));
+    }
+
+    return new ReplaceOneModel<>(Filters.eq(ID_KEY, keyHex), new Document(VALUE_KEY, valueHex),
+        new UpdateOptions().upsert(true));
   }
 }
