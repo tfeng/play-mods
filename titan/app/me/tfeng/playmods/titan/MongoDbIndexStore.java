@@ -213,19 +213,20 @@ public class MongoDbIndexStore {
           return Filters.eq(key, value);
         } else if (predicate == Cmp.NOT_EQUAL) {
           return Filters.ne(key, value);
-        } else {
-          throw new UnsupportedOperationException("Unsupported predicate " + predicate + " for text field");
         }
       } else if (value instanceof Geoshape) {
-        if (predicate == Geo.WITHIN) {
-          Geoshape shape = (Geoshape) value;
-          if (shape.getType() == Type.BOX || shape.getType() == Type.POLYGON) {
-            return new Document("$geoWithin", new Document("$geometry", convertGeoshape(shape)));
-          } else {
-            throw new UnsupportedOperationException("Unsupported geo shape type " + shape.getType() + " in query");
-          }
-        } else {
-          throw new UnsupportedOperationException("Unsupported predicate " + predicate + " for geo shape");
+        Geoshape shape = (Geoshape) value;
+        if (shape.getType() != Type.BOX && shape.getType() != Type.POLYGON) {
+          throw new UnsupportedOperationException("Unsupported geo shape type " + shape.getType() + " in query");
+        }
+        switch ((Geo) predicate) {
+        case DISJOINT:
+          return Filters.not(new Document("$geoIntersects", new Document("$geometry", convertGeoshape(shape))));
+        case INTERSECT:
+          return new Document("$geoIntersects", new Document("$geometry", convertGeoshape(shape)));
+        case WITHIN:
+          return new Document("$geoWithin", new Document("$geometry", convertGeoshape(shape)));
+        default:
         }
       } else if (value instanceof Date) {
         return createValueFilter((Cmp) predicate, key, ((Date) value).getTime());
@@ -239,7 +240,6 @@ public class MongoDbIndexStore {
         case NOT_EQUAL:
           return Filters.ne(key, value);
         default:
-          throw new UnsupportedOperationException("Unsupported predicate " + predicate + " for boolean");
         }
       } else if (value instanceof UUID) {
         Cmp cmp = (Cmp) predicate;
@@ -249,11 +249,10 @@ public class MongoDbIndexStore {
         case NOT_EQUAL:
           return Filters.ne(key, value.toString());
         default:
-          throw new UnsupportedOperationException("Unsupported predicate " + predicate + " for UUID");
         }
-      } else {
-        throw new UnsupportedOperationException("Unsupported query with value " + value);
       }
+      throw new UnsupportedOperationException("Unsupported predicate " + predicate + " of type " + predicate.getClass()
+          + " for query value " + value + " of type " + value.getClass());
     } else {
       throw new UnsupportedOperationException("Unsupported condition " + condition + " of type "
           + condition.getClass());

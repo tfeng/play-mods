@@ -90,8 +90,7 @@ public class MongoDbIndexProvider implements IndexProvider {
 
   public MongoDbIndexProvider(Configuration configuration) {
     ApplicationManager applicationManager = ApplicationManager.getApplicationManager();
-    AutowiredAnnotationBeanPostProcessor beanPostProcessor =
-        new AutowiredAnnotationBeanPostProcessor();
+    AutowiredAnnotationBeanPostProcessor beanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
     beanPostProcessor.setBeanFactory(applicationManager.getApplicationContext().getAutowireCapableBeanFactory());
     beanPostProcessor.processInjection(this);
 
@@ -176,16 +175,17 @@ public class MongoDbIndexProvider implements IndexProvider {
 
     Class<?> dataType = information.getDataType();
     Mapping mapping = Mapping.getMapping(information);
-    if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) {
+    if (mapping != Mapping.DEFAULT && !AttributeUtil.isString(dataType)) {
       return false;
     }
 
     if (Number.class.isAssignableFrom(dataType)) {
       return titanPredicate instanceof Cmp;
     } else if (dataType == Geoshape.class) {
-      return titanPredicate == Geo.WITHIN;
+      return titanPredicate instanceof Geo;
     } else if (AttributeUtil.isString(dataType)) {
-      return titanPredicate instanceof Cmp || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX;
+      return (mapping == Mapping.DEFAULT || mapping == Mapping.STRING)
+          && (titanPredicate instanceof Cmp || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX);
     } else if (dataType == Date.class || dataType == Instant.class) {
       return titanPredicate instanceof Cmp;
     } else if (dataType == Boolean.class) {

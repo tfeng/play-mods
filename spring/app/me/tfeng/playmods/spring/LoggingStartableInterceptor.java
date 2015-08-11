@@ -56,7 +56,7 @@ public class LoggingStartableInterceptor implements StartableInterceptor {
 
   @Override
   public void failStart(Startable startable, Throwable t) {
-    LOG.error("Unable to start " + getName(startable), t);
+    throw new RuntimeException("Unable to start " + getName(startable), t);
   }
 
   @Override

@@ -74,8 +74,7 @@ public class MongoDbStoreManager implements OrderedKeyValueStoreManager {
 
   public MongoDbStoreManager(Configuration configuration) {
     ApplicationManager applicationManager = ApplicationManager.getApplicationManager();
-    AutowiredAnnotationBeanPostProcessor beanPostProcessor =
-        new AutowiredAnnotationBeanPostProcessor();
+    AutowiredAnnotationBeanPostProcessor beanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
     beanPostProcessor.setBeanFactory(applicationManager.getApplicationContext().getAutowireCapableBeanFactory());
     beanPostProcessor.processInjection(this);
 
