@@ -5,7 +5,7 @@ name := "play-mods"
 Settings.common ++ Settings.disablePublishing
 
 lazy val parent =
-    project in file(".") aggregate(common, spring, dust, http, security, avro, avroD2, oauth2, kafka, mongodb, titan)
+    project in file(".") aggregate(common, spring, dust, http, security, avro, avroD2, oauth2, kafka, mongodb)
 
 lazy val common = project in file("common") enablePlugins(PlayJava)
 
@@ -26,5 +26,3 @@ lazy val oauth2 = project in file("oauth2") enablePlugins(PlayJava) dependsOn(se
 lazy val kafka = project in file("kafka") enablePlugins(PlayJava) dependsOn(avro)
 
 lazy val mongodb = project in file("mongodb") enablePlugins(PlayJava) dependsOn(avro)
-
-lazy val titan = project in file("titan") enablePlugins(PlayJava) dependsOn(mongodb)
