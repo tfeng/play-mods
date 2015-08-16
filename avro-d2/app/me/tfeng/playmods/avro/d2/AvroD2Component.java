@@ -43,10 +43,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import me.tfeng.playmods.avro.AvroHelper;
 import me.tfeng.playmods.avro.d2.factories.ClientFactory;
-import me.tfeng.playmods.spring.ApplicationManager;
-import me.tfeng.playmods.spring.ExtendedStartable;
+import me.tfeng.toolbox.avro.AvroHelper;
+import me.tfeng.toolbox.spring.ApplicationManager;
+import me.tfeng.toolbox.spring.ExtendedStartable;
 import play.Logger;
 import play.Logger.ALogger;
 

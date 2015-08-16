@@ -24,7 +24,8 @@ import java.util.UUID;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import me.tfeng.playmods.spring.ApplicationManager;
+import me.tfeng.playmods.modules.SpringModule;
+import me.tfeng.toolbox.spring.ApplicationManager;
 import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http.Context;
@@ -41,7 +42,7 @@ public class SecurityContextAction extends Action<SecurityContext> {
   private final SecurityComponent securityComponent;
 
   public SecurityContextAction() {
-    ApplicationManager applicationManager = ApplicationManager.getApplicationManager();
+    ApplicationManager applicationManager = SpringModule.getApplicationManager();
     securityComponent = applicationManager.getBean(SECURITY_COMPONENT_KEY, SecurityComponent.class);
   }
 

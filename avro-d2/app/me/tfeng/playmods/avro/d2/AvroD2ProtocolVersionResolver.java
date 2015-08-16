@@ -45,8 +45,9 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
-import me.tfeng.playmods.avro.AvroHelper;
+import me.tfeng.playmods.avro.AvroConstants;
 import me.tfeng.playmods.avro.ProtocolVersionResolver;
+import me.tfeng.toolbox.avro.AvroHelper;
 import play.Logger;
 import play.Logger.ALogger;
 
@@ -70,7 +71,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
     byte[] serverMD5 = serverProtocol.getMD5();
     String namespace = serverProtocol.getNamespace();
     String name = serverProtocol.getName();
-    HandshakeRequest request = AvroHelper.HANDSHAKE_REQUEST_READER.read(null, in);
+    HandshakeRequest request = AvroConstants.HANDSHAKE_REQUEST_READER.read(null, in);
     MD5 clientHash = request.getClientHash();
     HandshakeResponse response = new HandshakeResponse();
     Protocol protocol = null;
@@ -114,7 +115,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
     RPCContext context = new RPCContext();
     context.setHandshakeRequest(request);
     context.setHandshakeResponse(response);
-    AvroHelper.HANDSHAKE_RESPONSE_WRITER.write(response, out);
+    AvroConstants.HANDSHAKE_RESPONSE_WRITER.write(response, out);
 
     return protocol;
   }

@@ -1,7 +1,0 @@
-{
-  "type": "record",
-  "name": "Empty",
-  "namespace": "test",
-  "fields": [
-  ]
-}

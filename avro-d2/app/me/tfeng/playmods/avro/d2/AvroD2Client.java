@@ -40,7 +40,7 @@ import com.google.common.collect.Lists;
 
 import me.tfeng.playmods.avro.d2.factories.RequestorFactory;
 import me.tfeng.playmods.avro.d2.factories.TransceiverFactory;
-import me.tfeng.playmods.common.Constants;
+import me.tfeng.toolbox.common.Constants;
 import play.Logger;
 import play.Logger.ALogger;
 import play.libs.F.Promise;

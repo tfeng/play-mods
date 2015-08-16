@@ -44,8 +44,9 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Maps;
 
-import me.tfeng.playmods.avro.AvroHelper;
+import me.tfeng.playmods.avro.AvroConstants;
 import me.tfeng.playmods.avro.ResponseProcessor;
+import me.tfeng.toolbox.avro.AvroHelper;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -66,7 +67,7 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
     ByteBufferInputStream bbi = new ByteBufferInputStream(response);
     BinaryDecoder in = DecoderFactory.get().binaryDecoder(bbi, null);
 
-    HandshakeResponse handshake = AvroHelper.HANDSHAKE_RESPONSE_READER.read(null, in);
+    HandshakeResponse handshake = AvroConstants.HANDSHAKE_RESPONSE_READER.read(null, in);
     Protocol localProtocol = requestor.getLocal();
     Protocol serverProtocol;
     if (handshake.getMatch() == HandshakeMatch.BOTH) {

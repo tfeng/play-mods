@@ -35,7 +35,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 import com.google.common.base.Strings;
 
-import me.tfeng.playmods.common.Constants;
+import me.tfeng.toolbox.common.Constants;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)

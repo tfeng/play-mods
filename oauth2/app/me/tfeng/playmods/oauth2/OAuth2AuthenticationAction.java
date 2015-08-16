@@ -32,7 +32,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import me.tfeng.playmods.spring.ApplicationManager;
+import me.tfeng.playmods.modules.SpringModule;
+import me.tfeng.toolbox.spring.ApplicationManager;
 import play.Logger;
 import play.Logger.ALogger;
 import play.libs.F.Promise;
@@ -60,7 +61,7 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   private final OAuth2Component oauth2Component;
 
   public OAuth2AuthenticationAction() {
-    ApplicationManager applicationManager = ApplicationManager.getApplicationManager();
+    ApplicationManager applicationManager = SpringModule.getApplicationManager();
     oauth2Component = applicationManager.getBean(OAUTH2_COMPONENT_KEY, OAuth2Component.class);
   }
 
@@ -69,8 +70,7 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     return authorizeAndCall(context, delegate);
   }
 
-  protected Promise<Result> authorizeAndCall(Context context, Action<?> delegate)
-      throws Throwable {
+  public Promise<Result> authorizeAndCall(Context context, Action<?> delegate) throws Throwable {
     Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
     try {
       Request request = context.request();

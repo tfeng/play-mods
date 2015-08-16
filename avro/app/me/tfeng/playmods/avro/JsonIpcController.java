@@ -39,7 +39,8 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import me.tfeng.playmods.common.Constants;
+import me.tfeng.toolbox.common.Constants;
+import me.tfeng.toolbox.avro.AvroHelper;
 import play.Logger;
 import play.Logger.ALogger;
 import play.Play;
@@ -93,7 +94,7 @@ public class JsonIpcController extends Controller {
     byte[] bytes = request().body().asRaw().asBytes();
     SpecificResponder responder = new SpecificResponder(protocolClass, implementation);
     Object request = getRequest(responder, avroMessage, bytes);
-    if (AvroHelper.isAvroClient(protocolClass)) {
+    if (protocolClass.getAnnotation(AvroClient.class) != null) {
       Promise<?> promise = (Promise<?>) responder.respond(avroMessage, request);
       return promise
           .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))

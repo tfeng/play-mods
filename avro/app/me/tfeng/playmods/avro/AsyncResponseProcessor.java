@@ -46,7 +46,7 @@ public class AsyncResponseProcessor implements ResponseProcessor {
       List<ByteBuffer> response) throws Exception {
     ByteBufferInputStream bbi = new ByteBufferInputStream(response);
     BinaryDecoder in = DecoderFactory.get().binaryDecoder(bbi, null);
-    HandshakeResponse handshake = AvroHelper.HANDSHAKE_RESPONSE_READER.read(null, in);
+    HandshakeResponse handshake = AvroConstants.HANDSHAKE_RESPONSE_READER.read(null, in);
     Protocol localProtocol = requestor.getLocal();
     Protocol serverProtocol;
     if (handshake.getMatch() == HandshakeMatch.BOTH) {
@@ -56,7 +56,7 @@ public class AsyncResponseProcessor implements ResponseProcessor {
     }
 
     RPCContext context = request.getContext();
-    RPCContextHelper.setResponseCallMeta(context, AvroHelper.META_READER.read(null, in));
+    RPCContextHelper.setResponseCallMeta(context, AvroConstants.META_READER.read(null, in));
 
     if (!in.readBoolean()) {
       Schema localSchema = localProtocol.getMessages().get(message).getResponse();

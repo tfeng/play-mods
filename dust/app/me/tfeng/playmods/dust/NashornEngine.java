@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 
-import me.tfeng.playmods.common.Constants;
+import me.tfeng.toolbox.common.Constants;
 import play.Logger;
 import play.Logger.ALogger;
 

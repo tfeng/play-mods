@@ -18,13 +18,14 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.oauth2;
+package me.tfeng.playmods.modules;
 
 import java.lang.reflect.Method;
 
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
-import me.tfeng.playmods.spring.SpringGlobalSettings;
+import me.tfeng.playmods.oauth2.OAuth2AuthenticationAction;
+import me.tfeng.playmods.oauth2.OAuth2Component;
 import play.Application;
 import play.libs.F.Promise;
 import play.mvc.Action;

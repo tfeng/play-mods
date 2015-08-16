@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 import com.ning.http.client.AsyncHttpClient;
 
-import me.tfeng.playmods.spring.Startable;
+import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
 

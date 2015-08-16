@@ -36,8 +36,8 @@ import org.springframework.stereotype.Component;
 
 import me.tfeng.playmods.avro.factories.RequestorFactory;
 import me.tfeng.playmods.avro.factories.TransceiverFactory;
-import me.tfeng.playmods.spring.ApplicationManager;
-import me.tfeng.playmods.spring.Startable;
+import me.tfeng.toolbox.spring.ApplicationManager;
+import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
 import play.libs.Akka;

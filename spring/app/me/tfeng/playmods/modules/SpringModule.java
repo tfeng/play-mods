@@ -40,8 +40,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 
+import me.tfeng.toolbox.spring.ApplicationManager;
+import play.Application;
 import play.Configuration;
 import play.Environment;
+import play.Play;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -83,6 +86,14 @@ public class SpringModule implements Module {
 
   public static final List<String> INTERNAL_CONFIG_LOCATIONS =
       Collections.singletonList("classpath*:play-mods.spring/**/*.xml");
+
+  public static ApplicationManager getApplicationManager() {
+    return Play.application().injector().instanceOf(ApplicationManager.class);
+  }
+
+  public static ApplicationManager getApplicationManager(Application application) {
+    return application.injector().instanceOf(ApplicationManager.class);
+  }
 
   private static <T> void bind(ConfigurableListableBeanFactory beanFactory, Binder binder, Class<T> type, String name) {
     if (beanFactory.getBeansOfType(type).size() == 1) {

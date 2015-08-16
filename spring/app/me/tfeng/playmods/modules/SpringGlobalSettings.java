@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.spring;
+package me.tfeng.playmods.modules;
 
 import play.Application;
 import play.GlobalSettings;
@@ -39,15 +39,11 @@ public class SpringGlobalSettings extends GlobalSettings {
 
   @Override
   public void onStart(Application application) {
-    getApplicationManager(application).start();
+    SpringModule.getApplicationManager(application).start();
   }
 
   @Override
   public void onStop(Application application) {
-    getApplicationManager(application).stop();
-  }
-
-  private ApplicationManager getApplicationManager(Application application) {
-    return application.injector().instanceOf(ApplicationManager.class);
+    SpringModule.getApplicationManager(application).stop();
   }
 }

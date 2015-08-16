@@ -23,14 +23,10 @@ package me.tfeng.playmods.avro;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Protocol;
 import org.apache.avro.Protocol.Message;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
@@ -54,12 +50,6 @@ import scala.concurrent.ExecutionContext;
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public class AsyncResponder extends SpecificResponder {
-
-  private static final Schema META = Schema.createMap(Schema.create(Schema.Type.BYTES));
-
-  public static final GenericDatumReader<Map<String,ByteBuffer>> META_READER = new GenericDatumReader<>(META);
-
-  public static final GenericDatumWriter<Map<String,ByteBuffer>> META_WRITER = new GenericDatumWriter<>(META);
 
   private final ExecutionContext executionContext;
 
@@ -114,7 +104,7 @@ public class AsyncResponder extends SpecificResponder {
     handshake = bbo.getBufferList();
 
     // read request using remote protocol specification
-    RPCContextHelper.setResponseCallMeta(context, META_READER.read(null, in));
+    RPCContextHelper.setResponseCallMeta(context, AvroConstants.META_READER.read(null, in));
     String messageName = in.readString(null).toString();
     if (messageName.equals("")) {
       // a handshake ping
@@ -137,7 +127,7 @@ public class AsyncResponder extends SpecificResponder {
     }
 
     List<ByteBuffer> handshakeFinal = handshake;
-    if (AvroHelper.isAvroClient(impl.getClass())) {
+    if (impl.getClass().getAnnotation(AvroClient.class) != null) {
       Promise<?> promise = (Promise<?>) respond(m, request);
       return promise.map(result -> {
           RPCContextHelper.setResponse(context, result);
@@ -196,7 +186,7 @@ public class AsyncResponder extends SpecificResponder {
     for (RPCPlugin plugin : rpcMetaPlugins) {
       plugin.serverSendResponse(context);
     }
-    META_WRITER.write(context.responseCallMeta(), out);
+    AvroConstants.META_WRITER.write(context.responseCallMeta(), out);
     out.flush();
     // Prepend handshake and append payload
     bbo.prepend(handshake);

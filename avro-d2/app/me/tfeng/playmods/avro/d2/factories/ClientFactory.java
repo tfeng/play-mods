@@ -26,9 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import me.tfeng.playmods.avro.AvroHelper;
 import me.tfeng.playmods.avro.d2.AvroD2Client;
 import me.tfeng.playmods.avro.d2.AvroD2Component;
+import me.tfeng.toolbox.avro.AvroHelper;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)

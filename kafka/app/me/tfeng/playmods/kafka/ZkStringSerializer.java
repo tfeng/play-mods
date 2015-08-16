@@ -23,7 +23,7 @@ package me.tfeng.playmods.kafka;
 import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
 
-import me.tfeng.playmods.common.Constants;
+import me.tfeng.toolbox.common.Constants;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
