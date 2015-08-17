@@ -47,7 +47,6 @@ import com.google.common.collect.Maps;
 
 import me.tfeng.playmods.avro.AvroConstants;
 import me.tfeng.playmods.avro.ProtocolVersionResolver;
-import me.tfeng.toolbox.avro.AvroHelper;
 import play.Logger;
 import play.Logger.ALogger;
 

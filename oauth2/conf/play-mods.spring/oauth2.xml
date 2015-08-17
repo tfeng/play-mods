@@ -12,12 +12,12 @@
 
   <context:component-scan base-package="me.tfeng.playmods.oauth2" />
 
-  <bean id="play-mods.oauth2.expression-handler"
-        class="org.springframework.security.oauth2.provider.expression.OAuth2MethodSecurityExpressionHandler">
-  </bean>
-
   <security:global-method-security pre-post-annotations="enabled">
     <security:expression-handler ref="play-mods.oauth2.expression-handler" />
   </security:global-method-security>
+
+  <bean id="play-mods.oauth2.expression-handler"
+        class="org.springframework.security.oauth2.provider.expression.OAuth2MethodSecurityExpressionHandler">
+  </bean>
 
 </beans>

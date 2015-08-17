@@ -65,11 +65,6 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     oauth2Component = applicationManager.getBean(OAUTH2_COMPONENT_KEY, OAuth2Component.class);
   }
 
-  @Override
-  public Promise<Result> call(Context context) throws Throwable {
-    return authorizeAndCall(context, delegate);
-  }
-
   public Promise<Result> authorizeAndCall(Context context, Action<?> delegate) throws Throwable {
     Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
     try {
@@ -103,6 +98,11 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     }
   }
 
+  @Override
+  public Promise<Result> call(Context context) throws Throwable {
+    return authorizeAndCall(context, delegate);
+  }
+
   protected UsernamePasswordAuthenticationToken getAuthentication(UserAuthentication user) {
     if (user == null) {
       return null;
@@ -131,9 +131,7 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     List<GrantedAuthority> authorities = client.getAuthorities().stream()
         .map(authority -> new SimpleGrantedAuthority(authority.toString()))
         .collect(Collectors.toList());
-    Set<String> scopes = client.getScopes().stream()
-        .map(scope -> scope.toString())
-        .collect(Collectors.toSet());
+    Set<String> scopes = client.getScopes().stream().map(scope -> scope.toString()).collect(Collectors.toSet());
     return new OAuth2Request(Collections.emptyMap(), client.getId().toString(), authorities, true, scopes,
         Collections.emptySet(), null, Collections.emptySet(), Collections.emptyMap());
   }

@@ -61,8 +61,7 @@ public class SecurityContextAction extends Action<SecurityContext> {
     return delegate.call(context).map(result -> {
       org.springframework.security.core.context.SecurityContext currentContext = SecurityContextHolder.getContext();
       SecurityContextHolder.clearContext();
-      org.springframework.security.core.context.SecurityContext emptyContext =
-          SecurityContextHolder.getContext();
+      org.springframework.security.core.context.SecurityContext emptyContext = SecurityContextHolder.getContext();
       boolean hasSecurityContext = !currentContext.equals(emptyContext);
 
       if (id != null) {

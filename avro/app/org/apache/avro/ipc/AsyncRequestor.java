@@ -61,9 +61,9 @@ public class AsyncRequestor extends SpecificRequestor {
 
   private boolean useGenericRecord;
 
-  public AsyncRequestor(Protocol protocol, AsyncTransceiver transceiver, SpecificData data,
-      int requestTimeout, RequestPreparer requestPreparer, ResponseProcessor responseProcessor,
-      boolean useGenericRecord) throws IOException {
+  public AsyncRequestor(Protocol protocol, AsyncTransceiver transceiver, SpecificData data, int requestTimeout,
+      RequestPreparer requestPreparer, ResponseProcessor responseProcessor, boolean useGenericRecord)
+      throws IOException {
     super(protocol, (Transceiver) transceiver, data);
     this.requestTimeout = requestTimeout;
     this.requestPreparer = requestPreparer;

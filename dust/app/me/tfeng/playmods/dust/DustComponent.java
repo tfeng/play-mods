@@ -21,12 +21,10 @@
 package me.tfeng.playmods.dust;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import akka.dispatch.ExecutionContexts;
 import akka.dispatch.Futures;
+import me.tfeng.toolbox.dust.JsEnginePool;
 import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.libs.F.Promise;
@@ -45,101 +44,34 @@ import scala.concurrent.ExecutionContextExecutorService;
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 @Component("play-mods.dust.component")
-public class DustComponent implements InitializingBean, Startable {
+public class DustComponent implements Startable {
 
   private static final Logger.ALogger LOG = Logger.of(DustComponent.class);
 
   @Autowired
-  @Qualifier("play-mods.dust.asset-locator")
-  private AssetLocator assetLocator;
-
-  private EngineType engineType;
-
-  @Value("${play-mods.dust.js-engine-type:NASHORN}")
-  private String engineTypeName;
-
-  private volatile ConcurrentLinkedQueue<JsEngine> engines;
+  @Qualifier("play-mods.dust.engine-pool")
+  private JsEnginePool enginePool;
 
   private volatile ExecutionContextExecutorService executionContext;
 
-  @Value("${play-mods.dust.js-engine-pool-size:4}")
-  private int jsEnginePoolSize;
-
-  @Value("${play-mods.dust.js-engine-pool-timeout:10000}")
-  private long jsEnginePoolTimeout;
-
-  @Value("${play-mods.dust.node-path:/opt/local/bin/node}")
-  private String nodePath;
-
-  @Value("${play-mods.dust.templates-directory:templates}")
-  private String templatesDirectory;
-
-  @Override
-  public void afterPropertiesSet() throws Exception {
-    engineType = EngineType.valueOf(engineTypeName);
-  }
-
-  public AssetLocator getAssetLocator() {
-    return assetLocator;
-  }
-
-  public String getNodePath() {
-    return nodePath;
-  }
-
-  public String getTemplatesDirectory() {
-    return templatesDirectory;
-  }
+  @Value("${play-mods.dust.execution-timeout:10000}")
+  private long executionTimeout;
 
   @Override
   public void onStart() throws Throwable {
     BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(jsEnginePoolSize, jsEnginePoolSize, jsEnginePoolTimeout,
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(enginePool.getSize(), enginePool.getSize(), executionTimeout,
         TimeUnit.MILLISECONDS, queue);
     executor.setRejectedExecutionHandler((runnable, threadPoolExecutor) ->
         LOG.warn("JS engine rejected a request; executor " + threadPoolExecutor));
     executionContext = ExecutionContexts.fromExecutorService(executor);
-
-    initializeEngines();
   }
 
   @Override
   public void onStop() throws Throwable {
-    engines.stream().forEach(JsEngine::destroy);
   }
 
   public Promise<String> render(String template, JsonNode data) {
-    JsEngine engine = engines.poll();
-    return Promise.wrap(Futures.future(() -> {
-      try {
-        return engine.render(template, data);
-      } finally {
-        engines.offer(engine);
-      }
-    }, executionContext));
-  }
-
-  public void switchToEngineType(EngineType engineType) throws Exception {
-    this.engineType = engineType;
-    initializeEngines();
-  }
-
-  private JsEngine createEngine() throws Exception {
-    switch (engineType) {
-    case NASHORN:
-      return new NashornEngine(this);
-    case NODE:
-      return new NodeEngine(this);
-    default:
-      throw new RuntimeException("Unknown engine type " + engineType);
-    }
-  }
-
-  private void initializeEngines() throws Exception {
-    ConcurrentLinkedQueue engines = new ConcurrentLinkedQueue<>();
-    for (int i = 0; i < jsEnginePoolSize; i++) {
-      engines.offer(createEngine());
-    }
-    this.engines = engines;
+    return Promise.wrap(Futures.future(() -> enginePool.render(template, data), executionContext));
   }
 }

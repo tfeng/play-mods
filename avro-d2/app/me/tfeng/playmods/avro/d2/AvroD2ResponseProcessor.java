@@ -58,8 +58,7 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
   @Qualifier("play-mods.avro-d2.component")
   private AvroD2Component avroD2Component;
 
-  private final Map<String, Protocol> protocolCache =
-      Collections.synchronizedMap(Maps.newHashMap());
+  private final Map<String, Protocol> protocolCache = Collections.synchronizedMap(Maps.newHashMap());
 
   @Override
   public Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message,

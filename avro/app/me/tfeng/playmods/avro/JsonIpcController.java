@@ -39,8 +39,8 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import me.tfeng.toolbox.common.Constants;
 import me.tfeng.toolbox.avro.AvroHelper;
+import me.tfeng.toolbox.common.Constants;
 import play.Logger;
 import play.Logger.ALogger;
 import play.Play;
