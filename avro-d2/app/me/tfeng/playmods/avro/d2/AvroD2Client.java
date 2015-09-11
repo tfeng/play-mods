@@ -66,8 +66,6 @@ public class AvroD2Client implements Watcher, InvocationHandler {
 
   private final RequestorFactory requestorFactory;
 
-  private final AvroD2ResponseProcessor responseProcessor = new AvroD2ResponseProcessor();
-
   private final ScheduledExecutorService scheduler;
 
   private final List<URL> serverUrls = Lists.newArrayList();
