@@ -22,19 +22,21 @@ package me.tfeng.playmods.avro;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
+import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Protocol;
 import org.apache.avro.Protocol.Message;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.specific.SpecificResponder;
+import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,18 +65,6 @@ public class JsonIpcController extends Controller {
 
   private static final ALogger LOG = Logger.of(JsonIpcController.class);
 
-  private static Object getRequest(Responder responder, Message message, byte[] data) throws IOException {
-    Schema schema = message.getRequest();
-    if (ArrayUtils.isEmpty(data)) {
-      // The method takes no argument; use empty data.
-      data = "{}".getBytes(Constants.UTF8);
-    }
-    JsonNode node = Json.parse(new ByteArrayInputStream(data));
-    node = AvroHelper.convertFromSimpleRecord(schema, node);
-    return responder.readRequest(message.getRequest(), message.getRequest(),
-        DecoderFactory.get().jsonDecoder(schema, node.toString()));
-  }
-
   @Autowired
   @Qualifier("play-mods.avro.component")
   private AvroComponent avroComponent;
@@ -94,37 +84,52 @@ public class JsonIpcController extends Controller {
     byte[] bytes = request().body().asRaw().asBytes();
     SpecificResponder responder = new SpecificResponder(protocolClass, implementation);
     Object request = getRequest(responder, avroMessage, bytes);
-    if (protocolClass.getAnnotation(AvroClient.class) != null) {
-      Promise<?> promise = (Promise<?>) responder.respond(avroMessage, request);
-      return promise
-          .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))
-          .recover(e -> {
-            try {
-              LOG.warn("Exception thrown while processing request; returning bad request", e);
-              return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), e));
-            } catch (Exception e2) {
-              throw e;
-            }
-          });
+    Method method = getMethod(responder, implementation, avroMessage, request);
+
+    Promise<?> promise;
+    if (Promise.class.isAssignableFrom(method.getReturnType())) {
+      promise = (Promise<?>) responder.respond(avroMessage, request);
     } else {
-      Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      return Promise.promise(() -> {
-        Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        try {
-          Object result = responder.respond(avroMessage, request);
-          return Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result));
-        } catch (Exception e) {
-          try {
-            LOG.warn("Exception thrown while processing request; returning bad request", e);
-            return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), e));
-          } catch (Exception e2) {
-            throw e;
-          }
-        } finally {
-          SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-        }
-      }, avroComponent.getExecutionContext());
+      promise = Promise.promise(() -> responder.respond(avroMessage, request), avroComponent.getExecutionContext());
     }
+    return promise
+        .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))
+        .recover(error -> {
+          if (error instanceof SpecificExceptionBase) {
+            LOG.warn("Exception thrown while processing Json IPC request", error);
+            return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
+          } else {
+            throw error;
+          }
+        });
+  }
+
+  private Method getMethod(SpecificResponder responder, Object implementation, Message message, Object request) {
+    int numParams = message.getRequest().getFields().size();
+    Object[] params = new Object[numParams];
+    Class[] paramTypes = new Class[numParams];
+    int i = 0;
+    for (Schema.Field param: message.getRequest().getFields()) {
+      params[i] = ((GenericRecord) request).get(param.name());
+      paramTypes[i] = responder.getSpecificData().getClass(param.schema());
+      i++;
+    }
+    try {
+      return implementation.getClass().getMethod(message.getName(), paramTypes);
+    } catch (NoSuchMethodException e) {
+      throw new AvroRuntimeException(e);
+    }
+  }
+
+  private Object getRequest(Responder responder, Message message, byte[] data) throws IOException {
+    Schema schema = message.getRequest();
+    if (ArrayUtils.isEmpty(data)) {
+      // The method takes no argument; use empty data.
+      data = "{}".getBytes(Constants.UTF8);
+    }
+    JsonNode node = Json.parse(new ByteArrayInputStream(data));
+    node = AvroHelper.convertFromSimpleRecord(schema, node);
+    return responder.readRequest(message.getRequest(), message.getRequest(),
+        DecoderFactory.get().jsonDecoder(schema, node.toString()));
   }
 }

@@ -130,9 +130,9 @@ public class AsyncResponder extends SpecificResponder {
     if (impl.getClass().getAnnotation(AvroClient.class) != null) {
       Promise<?> promise = (Promise<?>) respond(m, request);
       return promise.map(result -> {
-          RPCContextHelper.setResponse(context, result);
-          processResult(bbo, out, context, m, handshakeFinal, result, null);
-          return bbo.getBufferList();
+        RPCContextHelper.setResponse(context, result);
+        processResult(bbo, out, context, m, handshakeFinal, result, null);
+        return bbo.getBufferList();
       }).recover(e -> {
         if (e instanceof Exception) {
           RPCContextHelper.setError(context, (Exception) e);
