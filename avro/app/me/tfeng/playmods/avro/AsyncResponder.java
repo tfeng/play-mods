@@ -127,39 +127,40 @@ public class AsyncResponder extends SpecificResponder {
     }
 
     List<ByteBuffer> handshakeFinal = handshake;
+    Promise<Object> promise;
     if (impl.getClass().getAnnotation(AvroClient.class) != null) {
-      Promise<?> promise = (Promise<?>) respond(m, request);
-      return promise.map(result -> {
-        RPCContextHelper.setResponse(context, result);
-        processResult(bbo, out, context, m, handshakeFinal, result, null);
-        return bbo.getBufferList();
-      }).recover(e -> {
-        if (e instanceof Exception) {
-          RPCContextHelper.setError(context, (Exception) e);
-          processResult(bbo, out, context, m, handshakeFinal, null, (Exception) e);
-          return bbo.getBufferList();
-        } else {
-          throw e;
-        }
-      });
+      promise = (Promise<Object>) respond(m, request);
     } else {
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      return Promise.promise(() -> {
+      promise = Promise.promise(() -> {
         Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(authentication);
         try {
-          Object result = respond(m, request);
-          RPCContextHelper.setResponse(context, result);
-          processResult(bbo, out, context, m, handshakeFinal, result, null);
-        } catch (Exception e) {
-          RPCContextHelper.setError(context, e);
-          processResult(bbo, out, context, m, handshakeFinal, null, e);
-        } finally {
+          return respond(m, request);
+        } finally{
           SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
         }
-        return bbo.getBufferList();
+      }).flatMap(result -> {
+        if (result instanceof Promise) {
+          return (Promise<Object>) result;
+        } else {
+          return Promise.pure(result);
+        }
       }, executionContext);
     }
+    return promise.map(result -> {
+      RPCContextHelper.setResponse(context, result);
+      processResult(bbo, out, context, m, handshakeFinal, result, null);
+      return bbo.getBufferList();
+    }).recover(e -> {
+      if (e instanceof Exception) {
+        RPCContextHelper.setError(context, (Exception) e);
+        processResult(bbo, out, context, m, handshakeFinal, null, (Exception) e);
+        return bbo.getBufferList();
+      } else {
+        throw e;
+      }
+    });
   }
 
   protected Protocol handshake(Decoder in, Encoder out, Transceiver connection) throws IOException {
