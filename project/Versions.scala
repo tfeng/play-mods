@@ -6,7 +6,7 @@ object Versions {
 
   val avro = "1.7.7"
 
-  val httpComponents = "4.4.2"
+  val httpComponents = "4.4.3"
 
   val sbtPlugins = "0.5.0"
 
