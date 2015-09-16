@@ -34,7 +34,6 @@ import org.apache.avro.specific.SpecificData;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 
 import com.google.common.collect.Lists;
 
@@ -74,16 +73,16 @@ public class AvroD2Client implements Watcher, InvocationHandler {
 
   private boolean useGenericRecord;
 
-  private final ZooKeeper zk;
+  private final ZooKeeperProvider zkProvider;
 
   public AvroD2Client(Protocol protocol, SpecificData data, RequestorFactory requestorFactory,
-      TransceiverFactory transceiverFactory, ZooKeeper zk, ScheduledExecutorService scheduler,
+      TransceiverFactory transceiverFactory, ZooKeeperProvider zkProvider, ScheduledExecutorService scheduler,
       long clientRefreshRetryDelay, boolean useGenericRecord) {
     this.protocol = protocol;
     this.data = data;
     this.requestorFactory = requestorFactory;
     this.transceiverFactory = transceiverFactory;
-    this.zk = zk;
+    this.zkProvider = zkProvider;
     this.scheduler = scheduler;
     this.clientRefreshRetryDelay = clientRefreshRetryDelay;
     this.useGenericRecord = useGenericRecord;
@@ -116,7 +115,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
     List<String> children;
     String path = AvroD2Helper.getServersZkPath(protocol);
     try {
-      children = zk.getChildren(path, this);
+      children = zkProvider.getZooKeeper().getChildren(path, this);
     } catch (Exception e) {
       LOG.warn("Unable to list servers for " + protocol.getName() + "; retry later", e);
       scheduleRefresh();
@@ -128,7 +127,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
       for (String child : children) {
         String childPath = path + "/" + child;
         try {
-          byte[] data = zk.getData(childPath, false, null);
+          byte[] data = zkProvider.getZooKeeper().getData(childPath, false, null);
           String serverUrl = new String(data, Constants.UTF8);
           serverUrls.add(new URL(serverUrl));
         } catch (Exception e) {
@@ -158,7 +157,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
     }
 
     if (!isVersionRegistered) {
-      AvroD2Helper.createVersionNode(zk, protocol);
+      AvroD2Helper.createVersionNode(zkProvider.getZooKeeper(), protocol);
       isVersionRegistered = true;
     }
 

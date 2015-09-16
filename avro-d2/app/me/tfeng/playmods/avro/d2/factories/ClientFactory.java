@@ -53,7 +53,7 @@ public class ClientFactory {
   }
 
   public AvroD2Client create(Protocol protocol, SpecificData data, boolean useGenericRecord) {
-    return new AvroD2Client(protocol, data, requestorFactory, transceiverFactory, avroD2Component.getZooKeeper(),
+    return new AvroD2Client(protocol, data, requestorFactory, transceiverFactory, avroD2Component,
         avroD2Component.getScheduler(), avroD2Component.getClientRefreshRetryDelay(), useGenericRecord);
   }
 }

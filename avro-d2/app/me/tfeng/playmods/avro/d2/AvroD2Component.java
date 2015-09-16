@@ -54,7 +54,7 @@ import play.Logger.ALogger;
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 @Component("play-mods.avro-d2.component")
-public class AvroD2Component implements ExtendedStartable, InitializingBean, Watcher {
+public class AvroD2Component implements ExtendedStartable, InitializingBean, Watcher, ZooKeeperProvider {
 
   public static final String PROTOCOL_PATHS_KEY = "play-mods.avro-d2.protocol-paths";
 

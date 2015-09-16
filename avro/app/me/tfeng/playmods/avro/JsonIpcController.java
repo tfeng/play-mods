@@ -90,7 +90,7 @@ public class JsonIpcController extends Controller {
     if (Promise.class.isAssignableFrom(method.getReturnType())) {
       promise = (Promise<?>) responder.respond(avroMessage, request);
     } else {
-      promise = Promise.promise(() -> responder.respond(avroMessage, request), avroComponent.getExecutionContext());
+      promise = Promise.pure(responder.respond(avroMessage, request));
     }
     return promise
         .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))
