@@ -32,6 +32,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooKeeper.States;
 
 import play.Logger;
 import play.Logger.ALogger;
@@ -101,6 +102,8 @@ public class AvroD2Server implements Watcher {
       if (zk == null) {
         // ZooKeeper is not initialized yet.
         scheduleRegister();
+      } if (zk.getState() == States.CLOSED) {
+        LOG.warn("ZooKeeper connection is closed; canceling registration for " + protocol.getName());
       } else {
         AvroD2Helper.createVersionNode(zk, protocol);
         nodePath = AvroD2Helper.createServerNode(zk, protocol, url);

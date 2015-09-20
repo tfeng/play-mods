@@ -108,7 +108,6 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
   @Override
   public void afterStart() {
     connect();
-    startServers();
   }
 
   @Override
@@ -210,7 +209,15 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
   protected void connect() {
     try {
       zk = new ZooKeeper(zkConnectString, zkSessionTimeout, this);
+      startServers();
     } catch (IOException e) {
+      if (zk != null) {
+        try {
+          zk.close();
+        } catch (InterruptedException e1) {
+          // Ignore.
+        }
+      }
       getScheduler().schedule(this::connect, clientRefreshRetryDelay, TimeUnit.MILLISECONDS);
       LOG.warn("Unable to connect to ZooKeeper; retry later", e);
     }
