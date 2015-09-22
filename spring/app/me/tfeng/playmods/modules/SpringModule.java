@@ -111,7 +111,7 @@ public class SpringModule implements Module {
   private ConfigurableApplicationContext applicationContext;
 
   public SpringModule(Environment environment, Configuration configuration) {
-    applicationContext = createApplicationContext(configuration);
+    applicationContext = createApplicationContext(environment, configuration);
   }
 
   @Override
@@ -128,17 +128,18 @@ public class SpringModule implements Module {
     });
   }
 
-  protected ConfigurableApplicationContext createApplicationContext(Configuration configuration) {
+  protected ConfigurableApplicationContext createApplicationContext(Environment environment,
+      Configuration configuration) {
     ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
-    List<String> activeProfiles = configuration.getStringList(ACTIVE_PROFILES_KEY);
-    List<String> defaultProfiles = configuration.getStringList(DEFAULT_PROFILES_KEY);
-    if (activeProfiles != null) {
-      applicationContext.getEnvironment().setActiveProfiles(activeProfiles.toArray(new String[activeProfiles.size()]));
-    }
-    if (defaultProfiles != null) {
-      applicationContext.getEnvironment().setDefaultProfiles(
-          defaultProfiles.toArray(new String[defaultProfiles.size()]));
-    }
+
+    List<String> activeProfiles = configuration.getStringList(ACTIVE_PROFILES_KEY, Lists.newArrayList());
+    List<String> defaultProfiles = configuration.getStringList(DEFAULT_PROFILES_KEY, Lists.newArrayList());
+    activeProfiles.add(environment.mode().name().toLowerCase());
+    defaultProfiles.add(environment.mode().name().toLowerCase());
+
+    applicationContext.getEnvironment().setActiveProfiles(activeProfiles.toArray(new String[activeProfiles.size()]));
+    applicationContext.getEnvironment().setDefaultProfiles(defaultProfiles.toArray(new String[defaultProfiles.size()]));
+
     applicationContext.setConfigLocations(getSpringConfigLocations(configuration));
     applicationContext.refresh();
     return applicationContext;
