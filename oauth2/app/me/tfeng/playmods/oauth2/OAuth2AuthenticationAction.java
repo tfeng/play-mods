@@ -20,18 +20,6 @@
 
 package me.tfeng.playmods.oauth2;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.provider.OAuth2Request;
-
 import me.tfeng.playmods.modules.SpringModule;
 import me.tfeng.toolbox.spring.ApplicationManager;
 import play.Logger;
@@ -66,52 +54,16 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   }
 
   public Promise<Result> authorizeAndCall(Context context, Action<?> delegate) throws Throwable {
-    Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    try {
-      Request request = context.request();
-      String token = getAuthorizationToken(request);
-      if (token == null) {
-        SecurityContextHolder.clearContext();
-        try {
-          return delegate.call(context).recover(t -> handleAuthenticationError(t));
-        } catch (Throwable t) {
-          return Promise.pure(handleAuthenticationError(t));
-        }
-      } else {
-        Promise<me.tfeng.playmods.oauth2.Authentication> promise =
-            oauth2Component.getAuthenticationManager().authenticate(token);
-        return promise.flatMap(authentication -> {
-          org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
-              new org.springframework.security.oauth2.provider.OAuth2Authentication(
-                  getOAuth2Request(authentication.getClient()),
-                  getAuthentication(authentication.getUser()));
-          SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
-          try {
-            return delegate.call(context).recover(t -> handleAuthenticationError(t));
-          } catch (Throwable t) {
-            return Promise.pure(handleAuthenticationError(t));
-          }
-        }).recover(t -> handleAuthenticationError(t));
-      }
-    } finally {
-      SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-    }
+    Request request = context.request();
+    String token = getAuthorizationToken(request);
+    return oauth2Component.callWithAuthorizationToken(token,
+        () -> delegate.call(context).recover(t -> handleAuthenticationError(t)))
+        .recover(t -> handleAuthenticationError(t));
   }
 
   @Override
   public Promise<Result> call(Context context) throws Throwable {
     return authorizeAndCall(context, delegate);
-  }
-
-  protected UsernamePasswordAuthenticationToken getAuthentication(UserAuthentication user) {
-    if (user == null) {
-      return null;
-    } else {
-      List<GrantedAuthority> authorities = user.getAuthorities().stream()
-          .map(authority -> new SimpleGrantedAuthority(authority.toString()))
-          .collect(Collectors.toList());
-      return new UsernamePasswordAuthenticationToken(user.getId().toString(), null, authorities);
-    }
   }
 
   protected String getAuthorizationToken(Request request) {
@@ -125,15 +77,6 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
       }
     }
     return request.getQueryString(ACCESS_TOKEN);
-  }
-
-  protected OAuth2Request getOAuth2Request(ClientAuthentication client) {
-    List<GrantedAuthority> authorities = client.getAuthorities().stream()
-        .map(authority -> new SimpleGrantedAuthority(authority.toString()))
-        .collect(Collectors.toList());
-    Set<String> scopes = client.getScopes().stream().map(scope -> scope.toString()).collect(Collectors.toSet());
-    return new OAuth2Request(Collections.emptyMap(), client.getId().toString(), authorities, true, scopes,
-        Collections.emptySet(), null, Collections.emptySet(), Collections.emptyMap());
   }
 
   protected Result handleAuthenticationError(Throwable t) throws Throwable {

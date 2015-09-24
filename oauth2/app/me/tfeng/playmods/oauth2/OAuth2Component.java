@@ -25,19 +25,31 @@ package me.tfeng.playmods.oauth2;
  */
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.exceptions.ClientAuthenticationException;
 import org.springframework.security.oauth2.provider.ClientRegistrationException;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import me.tfeng.playmods.avro.AsyncHttpException;
 import me.tfeng.playmods.oauth2.AuthenticationError;
 import me.tfeng.playmods.oauth2.AuthenticationManagerClient;
+import me.tfeng.toolbox.common.ThrowingFunction;
+import play.libs.F.Promise;
 
 @Component("play-mods.oauth2.component")
 public class OAuth2Component {
@@ -72,7 +84,52 @@ public class OAuth2Component {
   @Qualifier("play-mods.oauth2.authentication-manager")
   private AuthenticationManagerClient authenticationManager;
 
+  public <T, E extends Throwable> Promise<T> callWithAuthorizationToken(String token, ThrowingFunction<Promise<T>, E> function) throws E {
+    try {
+      if (token == null) {
+        SecurityContextHolder.clearContext();
+        return function.apply();
+      } else {
+        Promise<me.tfeng.playmods.oauth2.Authentication> promise = getAuthenticationManager().authenticate(token);
+        return promise.flatMap(authentication -> {
+          org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
+              new org.springframework.security.oauth2.provider.OAuth2Authentication(
+                  getOAuth2Request(authentication.getClient()),
+                  getAuthentication(authentication.getUser()));
+          SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
+          try {
+            return function.apply();
+          } finally {
+            SecurityContextHolder.clearContext();
+          }
+        });
+      }
+    } finally {
+      SecurityContextHolder.clearContext();
+    }
+  }
+
   public AuthenticationManagerClient getAuthenticationManager() {
     return authenticationManager;
+  }
+
+  private UsernamePasswordAuthenticationToken getAuthentication(UserAuthentication user) {
+    if (user == null) {
+      return null;
+    } else {
+      List<GrantedAuthority> authorities = user.getAuthorities().stream()
+          .map(authority -> new SimpleGrantedAuthority(authority.toString()))
+          .collect(Collectors.toList());
+      return new UsernamePasswordAuthenticationToken(user.getId().toString(), null, authorities);
+    }
+  }
+
+  private OAuth2Request getOAuth2Request(ClientAuthentication client) {
+    List<GrantedAuthority> authorities = client.getAuthorities().stream()
+        .map(authority -> new SimpleGrantedAuthority(authority.toString()))
+        .collect(Collectors.toList());
+    Set<String> scopes = client.getScopes().stream().map(scope -> scope.toString()).collect(Collectors.toSet());
+    return new OAuth2Request(Collections.emptyMap(), client.getId().toString(), authorities, true, scopes,
+        Collections.emptySet(), null, Collections.emptySet(), Collections.emptyMap());
   }
 }
