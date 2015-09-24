@@ -2,7 +2,7 @@ package me.tfeng.playmods
 
 object Versions {
 
-  val project = "0.5.5-SNAPSHOT"
+  val project = "0.5.5"
 
   val avro = "1.7.7"
 
