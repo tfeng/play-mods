@@ -21,6 +21,7 @@
 package me.tfeng.playmods.avro;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
@@ -112,10 +113,18 @@ public class AvroComponent implements Startable {
           if (Promise.class.isAssignableFrom(method.getReturnType())) {
             return Promise.promise(() -> {
               Method implementationMethod = implementationClass.getMethod(method.getName(), method.getParameterTypes());
-              return implementationMethod.invoke(implementation, args);
+              try {
+                return implementationMethod.invoke(implementation, args);
+              } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+              }
             }, executionContext);
           } else {
-            return method.invoke(implementation, args);
+            try {
+              return method.invoke(implementation, args);
+            } catch (InvocationTargetException e) {
+              throw e.getTargetException();
+            }
           }
         }));
   }
