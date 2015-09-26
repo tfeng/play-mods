@@ -135,7 +135,7 @@ public class AvroComponent implements Startable {
     try {
       protocolImplementations = applicationManager.getBean(PROTOCOL_IMPLEMENTATIONS_KEY, Map.class);
     } catch (NoSuchBeanDefinitionException e) {
-      // Ignore.
+      protocolImplementations = Collections.emptyMap();
     }
 
     try {

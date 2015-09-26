@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -101,7 +102,7 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
     try {
       protocolPaths = applicationManager.getBean(PROTOCOL_PATHS_KEY, Map.class);
     } catch (NoSuchBeanDefinitionException e) {
-      // Ignore.
+      protocolPaths = Collections.emptyMap();
     }
   }
 
