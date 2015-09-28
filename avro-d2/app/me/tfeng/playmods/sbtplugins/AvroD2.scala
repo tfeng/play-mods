@@ -31,5 +31,7 @@ object AvroD2 extends AutoPlugin {
 
   override lazy val projectSettings = settings
 
-  lazy val settings = SbtAvro.settings ++ Seq(addSbtPlugin("me.tfeng.play-mods" % "avro-d2" % Versions.project))
+  lazy val settings = SbtAvro.settings ++ Seq(
+    addSbtPlugin("me.tfeng.play-mods" % "avro-d2" % Versions.project),
+    SbtAvro.Keys.extraSchemaClasses += "me.tfeng.playmods.avro.ApplicationError")
 }

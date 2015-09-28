@@ -1,0 +1,15 @@
+{
+  "type": "error",
+  "name": "ApplicationError",
+  "namespace": "me.tfeng.playmods.avro",
+  "fields": [
+    {
+      "name": "status",
+      "type": "int"
+    },
+    {
+      "name": "message",
+      "type": "string"
+    }
+  ]
+}

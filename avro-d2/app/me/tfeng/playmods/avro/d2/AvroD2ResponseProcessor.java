@@ -20,6 +20,7 @@
 
 package me.tfeng.playmods.avro.d2;
 
+import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.apache.avro.ipc.HandshakeMatch;
 import org.apache.avro.ipc.HandshakeResponse;
 import org.apache.avro.ipc.RPCContext;
 import org.apache.avro.ipc.RPCContextHelper;
+import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.avro.util.ByteBufferInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,12 +49,17 @@ import com.google.common.collect.Maps;
 import me.tfeng.playmods.avro.AvroConstants;
 import me.tfeng.playmods.avro.ResponseProcessor;
 import me.tfeng.toolbox.avro.AvroHelper;
+import me.tfeng.toolbox.spring.BeanUtils;
+import play.Logger;
+import play.Logger.ALogger;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 @Component("play-mods.avro-d2.response-processor")
 public class AvroD2ResponseProcessor implements ResponseProcessor {
+
+  private static final ALogger LOG = Logger.of(AvroD2ResponseProcessor.class);
 
   @Autowired
   @Qualifier("play-mods.avro-d2.component")
@@ -96,7 +103,23 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
       Schema remoteSchema = serverProtocol.getMessages().get(message).getErrors();
       Object error = requestor.getDatumReader(remoteSchema, localSchema).read(null, in);
       Exception exception;
-      if (error instanceof Exception) {
+      if (error instanceof SpecificExceptionBase) {
+        SpecificExceptionBase specificError = (SpecificExceptionBase) error;
+        Schema errorSchema = serverProtocol.getMessages().get(message).getErrors();
+        String errorMessage = AvroHelper.toJson(errorSchema, error);
+        Constructor<? extends SpecificExceptionBase> constructor =
+            BeanUtils.findConstructor(specificError.getClass(), true, String.class);
+        if (constructor != null) {
+          SpecificExceptionBase newSpecificError = BeanUtils.instantiateClass(constructor, errorMessage);
+          for (int i = 0; i < newSpecificError.getSchema().getFields().size(); i++) {
+            newSpecificError.put(i, specificError.get(i));
+          }
+          exception = newSpecificError;
+        } else {
+          LOG.error("Unable to reconstruct Avro specific exception " + errorMessage);
+          exception = (Exception) error;
+        }
+      } else if (error instanceof Exception) {
         exception = (Exception) error;
       } else {
         exception = new AvroRuntimeException(error.toString());

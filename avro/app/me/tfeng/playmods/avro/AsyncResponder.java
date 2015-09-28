@@ -43,6 +43,8 @@ import org.apache.avro.util.ByteBufferOutputStream;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import play.Logger;
+import play.Logger.ALogger;
 import play.libs.F.Promise;
 import scala.concurrent.ExecutionContext;
 
@@ -50,6 +52,8 @@ import scala.concurrent.ExecutionContext;
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public class AsyncResponder extends SpecificResponder {
+
+  private static final ALogger LOG = Logger.of(AsyncResponder.class);
 
   private final ExecutionContext executionContext;
 
@@ -154,6 +158,7 @@ public class AsyncResponder extends SpecificResponder {
       return bbo.getBufferList();
     }).recover(e -> {
       if (e instanceof Exception) {
+        LOG.warn("Exception thrown while processing Avro IPC request", e);
         RPCContextHelper.setError(context, (Exception) e);
         processResult(bbo, out, context, m, handshakeFinal, null, (Exception) e);
         return bbo.getBufferList();

@@ -97,7 +97,12 @@ public class JsonIpcController extends Controller {
         .recover(error -> {
           if (error instanceof SpecificExceptionBase) {
             LOG.warn("Exception thrown while processing Json IPC request", error);
-            return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
+            if (error instanceof ApplicationError) {
+              int status = ((ApplicationError) error).getStatus();
+              return Results.status(status, AvroHelper.toJson(avroMessage.getErrors(), error));
+            } else {
+              return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
+            }
           } else {
             throw error;
           }

@@ -16,3 +16,5 @@ libraryDependencies ++= Seq(
 addSbtPlugin("me.tfeng.sbt-plugins" % "avro-plugin" % Versions.sbtPlugins)
 
 unmanagedSourceDirectories in Compile += baseDirectory.value / "../project"
+
+SbtAvro.settings
