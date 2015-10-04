@@ -28,11 +28,9 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.apache.avro.AvroRuntimeException;
-import org.apache.avro.specific.SpecificRecord;
-
-import me.tfeng.playmods.avro.AsyncHttpException;
+import me.tfeng.playmods.avro.ApplicationError;
 import me.tfeng.playmods.avro.AsyncTransceiver;
+import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.playmods.http.RequestPoster;
 import me.tfeng.playmods.http.RequestPreparer;
 import play.libs.F.Promise;
@@ -75,20 +73,18 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
       try {
         int status = response.getStatus();
         if (status >= 400) {
-          throw new AsyncHttpException(status, url);
+          throw ApplicationError.newBuilder()
+              .setStatus(status)
+              .setMessage$("Remote server returned HTTP response code " + status)
+              .setValue("Remote server at " + url + " returned HTTP response code " + status)
+              .build();
         }
         InputStream stream = response.getBodyAsStream();
         return readBuffers(stream);
       } catch (Throwable t) {
-        throw new AvroRuntimeException(t);
+        throw new RemoteInvocationException("Remote invocation to server at " + url + " failed", t);
       }
-    }, throwable -> {
-      if (throwable instanceof SpecificRecord || throwable instanceof RuntimeException) {
-        return throwable;
-      } else {
-        return new AvroRuntimeException(throwable);
-      }
-    });
+    }, throwable -> new RemoteInvocationException("Remote invocation to server at " + url + " failed", throwable));
   }
 
   protected Promise<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers, RequestPreparer postRequestPreparer) {

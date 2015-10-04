@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import me.tfeng.playmods.avro.factories.ResponderFactory;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
 import play.Logger;
@@ -69,6 +70,10 @@ public class JsonIpcController extends Controller {
   @Qualifier("play-mods.avro.component")
   private AvroComponent avroComponent;
 
+  @Autowired
+  @Qualifier("play-mods.avro.responder-factory")
+  private ResponderFactory responderFactory;
+
   @BodyParser.Of(BodyParser.Raw.class)
   public Promise<Result> post(String message, String protocol) throws Throwable {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
@@ -82,7 +87,7 @@ public class JsonIpcController extends Controller {
     Protocol avroProtocol = AvroHelper.getProtocol(protocolClass);
     Message avroMessage = avroProtocol.getMessages().get(message);
     byte[] bytes = request().body().asRaw().asBytes();
-    SpecificResponder responder = new SpecificResponder(protocolClass, implementation);
+    AsyncResponder responder = createResponder(protocolClass, implementation);
     Object request = getRequest(responder, avroMessage, bytes);
     Method method = getMethod(responder, implementation, avroMessage, request);
 
@@ -95,6 +100,9 @@ public class JsonIpcController extends Controller {
     return promise
         .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))
         .recover(error -> {
+          if (error instanceof RemoteInvocationException) {
+            error = error.getCause();
+          }
           if (error instanceof SpecificExceptionBase) {
             LOG.warn("Exception thrown while processing Json IPC request", error);
             if (error instanceof ApplicationError) {
@@ -107,6 +115,10 @@ public class JsonIpcController extends Controller {
             throw error;
           }
         });
+  }
+
+  protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
+    return responderFactory.create(protocolClass, implementation);
   }
 
   private Method getMethod(SpecificResponder responder, Object implementation, Message message, Object request) {

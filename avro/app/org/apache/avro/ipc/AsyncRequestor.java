@@ -37,6 +37,7 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 
 import me.tfeng.playmods.avro.AsyncTransceiver;
+import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.playmods.avro.ResponseProcessor;
 import me.tfeng.playmods.http.RequestPreparer;
 import play.libs.F.Promise;
@@ -99,7 +100,18 @@ public class AsyncRequestor extends SpecificRequestor {
     if (Promise.class.isAssignableFrom(method.getReturnType())) {
       return promise;
     } else {
-      return promise.get(requestTimeout);
+      try {
+        return promise.get(requestTimeout);
+      } catch (RemoteInvocationException e) {
+        Throwable cause = e.getCause();
+        Class<?>[] exceptionTypes = method.getExceptionTypes();
+        for (Class<?> exceptionType : exceptionTypes) {
+          if (exceptionType.isInstance(cause)) {
+            throw cause;
+          }
+        }
+        throw e;
+      }
     }
   }
 

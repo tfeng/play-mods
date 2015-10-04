@@ -20,16 +20,17 @@
 
 package me.tfeng.playmods.oauth2;
 
+import org.apache.http.HttpStatus;
+
+import me.tfeng.playmods.avro.ApplicationError;
+import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.playmods.modules.SpringModule;
 import me.tfeng.toolbox.spring.ApplicationManager;
-import play.Logger;
-import play.Logger.ALogger;
 import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http.Context;
 import play.mvc.Http.Request;
 import play.mvc.Result;
-import play.mvc.Results;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -41,8 +42,6 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   private static final String AUTHORIZATION_HEADER = "authorization";
 
   private static final String BEARER = "bearer";
-
-  private static final ALogger LOG = Logger.of(OAuth2AuthenticationAction.class);
 
   private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
 
@@ -57,8 +56,8 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     Request request = context.request();
     String token = getAuthorizationToken(request);
     return oauth2Component.callWithAuthorizationToken(token,
-        () -> delegate.call(context).recover(t -> handleAuthenticationError(t)))
-        .recover(t -> handleAuthenticationError(t));
+        () -> delegate.call(context).recover(t -> handleAuthenticationError(token, t)))
+        .recover(t -> handleAuthenticationError(token, t));
   }
 
   @Override
@@ -79,10 +78,17 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     return request.getQueryString(ACCESS_TOKEN);
   }
 
-  protected Result handleAuthenticationError(Throwable t) throws Throwable {
+  protected Result handleAuthenticationError(String token, Throwable t) throws Throwable {
     if (OAuth2Component.isAuthenticationError(t)) {
-      LOG.warn("Authentication failed", t);
-      return Results.unauthorized();
+      if (t instanceof RemoteInvocationException) {
+        t = t.getCause();
+      }
+      throw ApplicationError.newBuilder()
+          .setStatus(HttpStatus.SC_UNAUTHORIZED)
+          .setMessage$("Authentication failed")
+          .setValue("Authentication failed for token " + token)
+          .setCause(t)
+          .build();
     } else {
       throw t;
     }

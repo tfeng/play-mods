@@ -20,6 +20,7 @@
 
 package me.tfeng.playmods.modules;
 
+import me.tfeng.toolbox.spring.ApplicationManager;
 import play.Application;
 import play.GlobalSettings;
 import play.libs.F.Promise;
@@ -39,7 +40,9 @@ public class SpringGlobalSettings extends GlobalSettings {
 
   @Override
   public void onStart(Application application) {
-    SpringModule.getApplicationManager(application).start();
+    ApplicationManager applicationManager = SpringModule.getApplicationManager(application);
+    applicationManager.start();
+    applicationManager.processInjection(this);
   }
 
   @Override

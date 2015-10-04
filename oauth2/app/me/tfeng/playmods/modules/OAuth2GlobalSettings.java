@@ -29,6 +29,7 @@ import me.tfeng.playmods.oauth2.OAuth2Component;
 import play.Application;
 import play.libs.F.Promise;
 import play.mvc.Action;
+import play.mvc.Action.Simple;
 import play.mvc.Http.Context;
 import play.mvc.Http.Request;
 import play.mvc.Http.RequestHeader;
@@ -39,6 +40,14 @@ import play.mvc.Results;
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public class OAuth2GlobalSettings extends SpringGlobalSettings {
+
+  public class OAuth2Action extends Simple {
+
+    @Override
+    public Promise<Result> call(Context context) throws Throwable {
+      return authenticationAction.authorizeAndCall(context, delegate);
+    }
+  }
 
   private OAuth2AuthenticationAction authenticationAction;
 
@@ -57,12 +66,7 @@ public class OAuth2GlobalSettings extends SpringGlobalSettings {
 
   @Override
   public Action<Void> onRequest(Request request, Method actionMethod) {
-    return new Action.Simple() {
-      @Override
-      public Promise<Result> call(Context context) throws Throwable {
-        return authenticationAction.authorizeAndCall(context, delegate);
-      }
-    };
+    return new OAuth2Action();
   }
 
   public void onStart(Application application) {

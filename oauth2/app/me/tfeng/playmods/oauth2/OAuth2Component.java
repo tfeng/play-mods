@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -45,9 +44,7 @@ import org.springframework.security.oauth2.provider.ClientRegistrationException;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
-import me.tfeng.playmods.avro.AsyncHttpException;
-import me.tfeng.playmods.oauth2.AuthenticationError;
-import me.tfeng.playmods.oauth2.AuthenticationManagerClient;
+import me.tfeng.playmods.avro.ApplicationError;
 import me.tfeng.toolbox.common.ThrowingFunction;
 import play.libs.F.Promise;
 
@@ -60,8 +57,7 @@ public class OAuth2Component {
         || t instanceof ClientAuthenticationException
         || t instanceof ClientRegistrationException
         || t instanceof AuthenticationError
-        || (t instanceof AsyncHttpException)
-        && ((AsyncHttpException) t).getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+        || (t instanceof ApplicationError) && ((ApplicationError) t).getStatus() == HttpStatus.SC_UNAUTHORIZED) {
       return true;
     }
 

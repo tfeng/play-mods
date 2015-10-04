@@ -157,6 +157,9 @@ public class AsyncResponder extends SpecificResponder {
       processResult(bbo, out, context, m, handshakeFinal, result, null);
       return bbo.getBufferList();
     }).recover(e -> {
+      if (e instanceof RemoteInvocationException) {
+        e = e.getCause();
+      }
       if (e instanceof Exception) {
         LOG.warn("Exception thrown while processing Avro IPC request", e);
         RPCContextHelper.setError(context, (Exception) e);
