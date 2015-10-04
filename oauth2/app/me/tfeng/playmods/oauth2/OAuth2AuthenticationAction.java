@@ -83,14 +83,15 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
       if (t instanceof RemoteInvocationException) {
         t = t.getCause();
       }
-      throw ApplicationError.newBuilder()
-          .setStatus(HttpStatus.SC_UNAUTHORIZED)
-          .setMessage$("Authentication failed")
-          .setValue("Authentication failed for token " + token)
-          .setCause(t)
-          .build();
-    } else {
-      throw t;
+      if (!(t instanceof ApplicationError)) {
+        throw ApplicationError.newBuilder()
+            .setStatus(HttpStatus.SC_UNAUTHORIZED)
+            .setMessage$("Authentication failed")
+            .setValue("Authentication failed for token " + token)
+            .setCause(t)
+            .build();
+      }
     }
+    throw t;
   }
 }

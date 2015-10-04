@@ -32,7 +32,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.specific.SpecificResponder;
-import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,24 +96,7 @@ public class JsonIpcController extends Controller {
     } else {
       promise = Promise.pure(responder.respond(avroMessage, request));
     }
-    return promise
-        .map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)))
-        .recover(error -> {
-          if (error instanceof RemoteInvocationException) {
-            error = error.getCause();
-          }
-          if (error instanceof SpecificExceptionBase) {
-            LOG.warn("Exception thrown while processing Json IPC request", error);
-            if (error instanceof ApplicationError) {
-              int status = ((ApplicationError) error).getStatus();
-              return Results.status(status, AvroHelper.toJson(avroMessage.getErrors(), error));
-            } else {
-              return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
-            }
-          } else {
-            throw error;
-          }
-        });
+    return promise.map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)));
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {

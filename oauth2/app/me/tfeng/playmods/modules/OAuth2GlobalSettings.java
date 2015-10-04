@@ -20,6 +20,7 @@
 
 package me.tfeng.playmods.modules;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -39,7 +40,7 @@ import play.mvc.Results;
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public class OAuth2GlobalSettings extends SpringGlobalSettings {
+public class OAuth2GlobalSettings extends AvroIpcGlobalSettings {
 
   public class OAuth2Action extends Simple {
 
@@ -53,14 +54,30 @@ public class OAuth2GlobalSettings extends SpringGlobalSettings {
 
   @Override
   public Promise<Result> onError(RequestHeader request, Throwable t) {
-    Throwable cause = t.getCause();
     if (OAuth2Component.isAuthenticationError(t)) {
       return Promise.pure(Results.unauthorized());
-    } else if (cause instanceof OAuth2Exception) {
-      OAuth2Exception oauth2Exception = (OAuth2Exception) cause;
-      return Promise.pure(Results.status(oauth2Exception.getHttpErrorCode(), oauth2Exception.getMessage()));
     } else {
-      return super.onError(request, t);
+      OAuth2Exception oauth2Exception = getOAuth2Exception(t);
+      if (oauth2Exception != null) {
+        return Promise.pure(Results.status(oauth2Exception.getHttpErrorCode(), oauth2Exception.getMessage()));
+      } else {
+        return super.onError(request, t);
+      }
+    }
+  }
+
+  private OAuth2Exception getOAuth2Exception(Throwable t) {
+    if (t instanceof InvocationTargetException) {
+      return getOAuth2Exception(((InvocationTargetException) t).getTargetException());
+    } else if (t instanceof OAuth2Exception) {
+      return (OAuth2Exception) t;
+    } else {
+      Throwable cause = t.getCause();
+      if (cause != null && cause != t) {
+        return getOAuth2Exception(cause);
+      } else {
+        return null;
+      }
     }
   }
 
