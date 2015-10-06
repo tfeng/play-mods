@@ -13,8 +13,6 @@ import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.toolbox.avro.AvroHelper;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.F.Promise;
-import play.mvc.Http.RequestHeader;
 import play.mvc.Result;
 import play.mvc.Results;
 
@@ -26,7 +24,7 @@ public class AvroIpcGlobalSettings extends SpringGlobalSettings {
   private static final ALogger LOG = Logger.of(AvroIpcGlobalSettings.class);
 
   @Override
-  public Promise<Result> onError(RequestHeader request, Throwable t) {
+  protected Result getResultOnError(Throwable t) {
     try {
       if (t instanceof RemoteInvocationException) {
         t = t.getCause();
@@ -37,14 +35,14 @@ public class AvroIpcGlobalSettings extends SpringGlobalSettings {
         Schema schema = Schema.createUnion(ImmutableList.of(Schema.create(Type.STRING), avroException.getSchema()));
         if (t instanceof ApplicationError) {
           int status = ((ApplicationError) t).getStatus();
-          return Promise.pure(Results.status(status, AvroHelper.toJson(schema, avroException)));
+          return Results.status(status, AvroHelper.toJson(schema, avroException));
         } else {
-          return Promise.pure(Results.badRequest(AvroHelper.toJson(schema, avroException)));
+          return Results.badRequest(AvroHelper.toJson(schema, avroException));
         }
       }
     } catch (IOException e) {
       LOG.error("Unable to convert Avro exception", e);
     }
-    return super.onError(request, t);
+    return super.getResultOnError(t);
   }
 }

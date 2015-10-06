@@ -35,7 +35,7 @@ public class SpringGlobalSettings extends GlobalSettings {
 
   @Override
   public Promise<Result> onError(RequestHeader request, Throwable t) {
-    return Promise.pure(Results.badRequest());
+    return Promise.pure(getResultOnError(t));
   }
 
   @Override
@@ -48,5 +48,9 @@ public class SpringGlobalSettings extends GlobalSettings {
   @Override
   public void onStop(Application application) {
     SpringModule.getApplicationManager(application).stop();
+  }
+
+  protected Result getResultOnError(Throwable t) {
+    return Results.badRequest();
   }
 }

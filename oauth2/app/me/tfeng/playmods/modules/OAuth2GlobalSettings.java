@@ -33,7 +33,6 @@ import play.mvc.Action;
 import play.mvc.Action.Simple;
 import play.mvc.Http.Context;
 import play.mvc.Http.Request;
-import play.mvc.Http.RequestHeader;
 import play.mvc.Result;
 import play.mvc.Results;
 
@@ -53,15 +52,25 @@ public class OAuth2GlobalSettings extends AvroIpcGlobalSettings {
   private OAuth2AuthenticationAction authenticationAction;
 
   @Override
-  public Promise<Result> onError(RequestHeader request, Throwable t) {
+  public Action<Void> onRequest(Request request, Method actionMethod) {
+    return new OAuth2Action();
+  }
+
+  public void onStart(Application application) {
+    super.onStart(application);
+    authenticationAction = new OAuth2AuthenticationAction();
+  }
+
+  @Override
+  protected Result getResultOnError(Throwable t) {
     if (OAuth2Component.isAuthenticationError(t)) {
-      return Promise.pure(Results.unauthorized());
+      return Results.unauthorized();
     } else {
       OAuth2Exception oauth2Exception = getOAuth2Exception(t);
-      if (oauth2Exception != null) {
-        return Promise.pure(Results.status(oauth2Exception.getHttpErrorCode(), oauth2Exception.getMessage()));
+      if (oauth2Exception == null) {
+        return super.getResultOnError(t);
       } else {
-        return super.onError(request, t);
+        return Results.status(oauth2Exception.getHttpErrorCode(), oauth2Exception.getMessage());
       }
     }
   }
@@ -79,15 +88,5 @@ public class OAuth2GlobalSettings extends AvroIpcGlobalSettings {
         return null;
       }
     }
-  }
-
-  @Override
-  public Action<Void> onRequest(Request request, Method actionMethod) {
-    return new OAuth2Action();
-  }
-
-  public void onStart(Application application) {
-    super.onStart(application);
-    authenticationAction = new OAuth2AuthenticationAction();
   }
 }
