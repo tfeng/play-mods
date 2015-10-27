@@ -20,11 +20,9 @@
 
 package me.tfeng.playmods.oauth2;
 
-/**
- * @author Thomas Feng (huining.feng@gmail.com)
- */
-
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -45,9 +43,13 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import me.tfeng.playmods.avro.ApplicationError;
+import me.tfeng.playmods.avro.AvroComponent;
 import me.tfeng.toolbox.common.ThrowingFunction;
 import play.libs.F.Promise;
 
+/**
+ * @author Thomas Feng (huining.feng@gmail.com)
+ */
 @Component("play-mods.oauth2.component")
 public class OAuth2Component {
 
@@ -80,33 +82,62 @@ public class OAuth2Component {
   @Qualifier("play-mods.oauth2.authentication-manager")
   private AuthenticationManagerClient authenticationManager;
 
-  public <T, E extends Throwable> Promise<T> callWithAuthorizationToken(String token, ThrowingFunction<Promise<T>, E> function) throws E {
-    try {
-      if (token == null) {
-        SecurityContextHolder.clearContext();
-        return function.apply();
-      } else {
-        Promise<me.tfeng.playmods.oauth2.Authentication> promise = getAuthenticationManager().authenticate(token);
-        return promise.flatMap(authentication -> {
-          org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
-              new org.springframework.security.oauth2.provider.OAuth2Authentication(
-                  getOAuth2Request(authentication.getClient()),
-                  getAuthentication(authentication.getUser()));
-          SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
-          try {
-            return function.apply();
-          } finally {
-            SecurityContextHolder.clearContext();
-          }
-        });
-      }
-    } finally {
+  @Autowired
+  @Qualifier("play-mods.avro.component")
+  private AvroComponent avroComponent;
+
+  public <T, E extends Throwable> Promise<T> callWithAuthorizationToken(String token,
+      ThrowingFunction<Promise<T>, E> function) throws E {
+    if (token == null) {
       SecurityContextHolder.clearContext();
+      return function.apply();
+    } else {
+      Promise<me.tfeng.playmods.oauth2.Authentication> promise = getAuthenticationManager().authenticate(token);
+      return promise.flatMap(authentication -> {
+        org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
+            new org.springframework.security.oauth2.provider.OAuth2Authentication(
+                getOAuth2Request(authentication.getClient()),
+                getAuthentication(authentication.getUser()));
+        SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
+        try {
+          return function.apply();
+        } finally {
+          SecurityContextHolder.clearContext();
+        }
+      });
     }
   }
 
   public AuthenticationManagerClient getAuthenticationManager() {
     return authenticationManager;
+  }
+
+  public <T> T localClient(Class<T> interfaceClass, Object implementation) {
+    Class<?> implementationClass = implementation.getClass();
+    return interfaceClass.cast(Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[] { interfaceClass },
+        (proxy, method, args) -> {
+          if (Promise.class.isAssignableFrom(method.getReturnType())) {
+            org.springframework.security.core.Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+            return Promise.promise(() -> {
+              Method implementationMethod = implementationClass.getMethod(method.getName(), method.getParameterTypes());
+              SecurityContextHolder.getContext().setAuthentication(authentication);
+              try {
+                return implementationMethod.invoke(implementation, args);
+              } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+              } finally {
+                SecurityContextHolder.clearContext();
+              }
+            }, avroComponent.getExecutionContext());
+          } else {
+            try {
+              return method.invoke(implementation, args);
+            } catch (InvocationTargetException e) {
+              throw e.getTargetException();
+            }
+          }
+        }));
   }
 
   private UsernamePasswordAuthenticationToken getAuthentication(UserAuthentication user) {

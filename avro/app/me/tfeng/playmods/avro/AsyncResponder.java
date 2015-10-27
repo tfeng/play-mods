@@ -137,12 +137,11 @@ public class AsyncResponder extends SpecificResponder {
     } else {
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
       promise = Promise.promise(() -> {
-        Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(authentication);
         try {
           return respond(m, request);
         } finally{
-          SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
+          SecurityContextHolder.clearContext();
         }
       }).flatMap(result -> {
         if (result instanceof Promise) {

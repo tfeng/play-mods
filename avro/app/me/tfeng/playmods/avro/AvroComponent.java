@@ -21,8 +21,6 @@
 package me.tfeng.playmods.avro;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.Collections;
@@ -43,7 +41,6 @@ import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
 import play.libs.Akka;
-import play.libs.F.Promise;
 import play.libs.HttpExecution;
 import scala.concurrent.ExecutionContext;
 
@@ -104,29 +101,6 @@ public class AvroComponent implements Startable {
 
   public Map<Class<?>, Object> getProtocolImplementations() {
     return protocolImplementations == null ? null : Collections.unmodifiableMap(protocolImplementations);
-  }
-
-  public <T> T localClient(Class<T> interfaceClass, Object implementation) {
-    Class<?> implementationClass = implementation.getClass();
-    return interfaceClass.cast(Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[] { interfaceClass },
-        (proxy, method, args) -> {
-          if (Promise.class.isAssignableFrom(method.getReturnType())) {
-            return Promise.promise(() -> {
-              Method implementationMethod = implementationClass.getMethod(method.getName(), method.getParameterTypes());
-              try {
-                return implementationMethod.invoke(implementation, args);
-              } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-              }
-            }, executionContext);
-          } else {
-            try {
-              return method.invoke(implementation, args);
-            } catch (InvocationTargetException e) {
-              throw e.getTargetException();
-            }
-          }
-        }));
   }
 
   @Override
