@@ -72,16 +72,19 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
   @Value("${play-mods.avro-d2.client-refresh-retry-delay:1000}")
   private long clientRefreshRetryDelay;
 
+  @Value("${play-mods.avro-d2.enable-server:true}")
+  private boolean enableServer;
+
   private boolean expired;
 
   private Map<Class<?>, String> protocolPaths;
 
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-  @Value("${play-mods.avro-d2.server-host}")
+  @Value("${play-mods.avro-d2.server-host:localhost}")
   private String serverHost;
 
-  @Value("${play-mods.avro-d2.server-port}")
+  @Value("${play-mods.avro-d2.server-port:0}")
   private int serverPort;
 
   @Value("${play-mods.avro-d2.server-register-retry-delay:1000}")
@@ -91,7 +94,7 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
 
   private ZooKeeper zk;
 
-  @Value("${play-mods.avro-d2.zk-connect-string}")
+  @Value("${play-mods.avro-d2.zk-connect-string:}")
   private String zkConnectString;
 
   @Value("${play-mods.avro-d2.zk-session-timeout:10000}")
@@ -108,7 +111,9 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
 
   @Override
   public void afterStart() {
-    connect();
+    if (enableServer) {
+      connect();
+    }
   }
 
   @Override
@@ -121,7 +126,9 @@ public class AvroD2Component implements ExtendedStartable, InitializingBean, Wat
 
   @Override
   public void beforeStop() {
-    stopServers();
+    if (enableServer) {
+      stopServers();
+    }
   }
 
   public <T> T client(Class<T> interfaceClass) {
