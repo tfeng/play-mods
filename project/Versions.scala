@@ -2,21 +2,21 @@ package me.tfeng.playmods
 
 object Versions {
 
-  val project = "0.7.0"
+  val project = "0.7.1-SNAPSHOT"
 
   val avro = "1.8.0"
 
   val httpComponents = "4.4.4"
 
-  val sbtPlugins = "0.7.0"
+  val sbtPlugins = "0.7.1-SNAPSHOT"
 
-  val scala = "2.10.5"
+  val scala = "2.10.6"
 
-  val springSecurity = "4.0.3.RELEASE"
+  val springSecurity = "4.0.4.RELEASE"
 
   val springSecurityOauth = "2.0.9.RELEASE"
 
-  val toolbox = "0.7.0"
+  val toolbox = "0.7.1-SNAPSHOT"
 
   val zookeeper = "3.4.7"
 }
