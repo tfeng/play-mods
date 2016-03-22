@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,12 +22,12 @@ package me.tfeng.playmods.http;
 
 import java.net.URL;
 
-import com.ning.http.client.AsyncHttpClient;
+import play.libs.ws.WSRequest;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public interface RequestPreparer {
 
-  void prepare(AsyncHttpClient.BoundRequestBuilder builder, String contentType, URL url);
+  void prepare(WSRequest request, String contentType, URL url);
 }

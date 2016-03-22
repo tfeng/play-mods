@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -27,15 +27,16 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
-import me.tfeng.playmods.avro.ApplicationError;
 import me.tfeng.playmods.avro.AsyncTransceiver;
-import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.playmods.http.RequestPoster;
 import me.tfeng.playmods.http.RequestPreparer;
-import play.libs.F.Promise;
+import me.tfeng.playmods.spring.ApplicationError;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import play.libs.ws.WSResponse;
-import scala.concurrent.ExecutionContext;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -50,56 +51,60 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     HttpTransceiver.writeBuffers(buffers, out);
   }
 
-  private final ExecutionContext executionContext;
+  private final Executor executor;
 
   private final RequestPoster requestPoster;
 
   private final URL url;
 
-  public AsyncHttpTransceiver(URL url, ExecutionContext executionContext, RequestPoster requestPoster) {
+  public AsyncHttpTransceiver(URL url, Executor executor, RequestPoster requestPoster) {
     super(url);
     this.url = url;
-    this.executionContext = executionContext;
+    this.executor = executor;
     this.requestPoster = requestPoster;
   }
 
   @Override
-  public Promise<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer) {
+  public CompletionStage<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer) {
     return asyncReadBuffers(asyncWriteBuffers(request, postRequestPreparer));
   }
 
-  protected Promise<List<ByteBuffer>> asyncReadBuffers(Promise<WSResponse> responsePromise) {
-    return responsePromise.transform(response -> {
-      try {
-        int status = response.getStatus();
-        if (status >= 400) {
-          throw ApplicationError.newBuilder()
-              .setStatus(status)
-              .setMessage$("Remote server returned HTTP response code " + status)
-              .setValue("Remote server at " + url + " returned HTTP response code " + status)
-              .build();
+  protected CompletionStage<List<ByteBuffer>> asyncReadBuffers(CompletionStage<WSResponse> responseCompletionStage) {
+    return responseCompletionStage.handle((response, throwable) -> {
+      if (throwable != null) {
+        throw ExceptionWrapper.wrap(throwable);
+      } else {
+        try {
+          int status = response.getStatus();
+          if (status >= 400) {
+            throw new ApplicationError(status, "Remote server at " + url + " returned HTTP response code " + status);
+          }
+          InputStream stream = response.getBodyAsStream();
+          return readBuffers(stream);
+        } catch (Throwable t) {
+          throw ExceptionWrapper.wrap(t);
         }
-        InputStream stream = response.getBodyAsStream();
-        return readBuffers(stream);
-      } catch (Throwable t) {
-        throw new RemoteInvocationException("Remote invocation to server at " + url + " failed", t);
       }
-    }, throwable -> new RemoteInvocationException("Remote invocation to server at " + url + " failed", throwable));
+    });
   }
 
-  protected Promise<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers, RequestPreparer postRequestPreparer) {
-    return Promise.promise(() -> {
-      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      writeBuffers(buffers, outputStream);
-      return outputStream;
-    }, executionContext).flatMap(outputStream -> postRequest(url, outputStream.toByteArray(), postRequestPreparer));
+  protected CompletionStage<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers,
+      RequestPreparer postRequestPreparer) {
+    return CompletableFuture
+        .supplyAsync(ExceptionWrapper.wrapFunction(() -> {
+          ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+          writeBuffers(buffers, outputStream);
+          return outputStream;
+        }), executor)
+        .thenCompose(ExceptionWrapper.wrapFunction(outputStream ->
+            postRequest(url, outputStream.toByteArray(), postRequestPreparer)));
   }
 
   protected String getContentType() {
     return CONTENT_TYPE;
   }
 
-  protected Promise<WSResponse> postRequest(URL url, byte[] body, RequestPreparer postRequestPreparer)
+  protected CompletionStage<WSResponse> postRequest(URL url, byte[] body, RequestPreparer postRequestPreparer)
       throws IOException {
     return requestPoster.postRequest(url, getContentType(), body, postRequestPreparer);
   }

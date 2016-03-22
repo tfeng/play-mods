@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,20 +18,13 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.sbtplugins
-
-import me.tfeng.playmods.Versions
-import me.tfeng.sbt.plugins.SbtAvro
-import sbt.{AutoPlugin, addSbtPlugin, toGroupID}
+package me.tfeng.playmods.spring;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-object Avro extends AutoPlugin {
+@FunctionalInterface
+public interface ThrowingSupplier<T, E extends Throwable> {
 
-  override lazy val projectSettings = settings
-
-  lazy val settings = SbtAvro.settings ++ Seq(
-    addSbtPlugin("me.tfeng.play-mods" % "avro" % Versions.project),
-    SbtAvro.Keys.extraSchemaClasses += "me.tfeng.playmods.avro.ApplicationError")
+  T get() throws E;
 }

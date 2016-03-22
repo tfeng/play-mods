@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -26,6 +26,8 @@ import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpStatus;
@@ -42,10 +44,10 @@ import org.springframework.security.oauth2.provider.ClientRegistrationException;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
-import me.tfeng.playmods.avro.ApplicationError;
 import me.tfeng.playmods.avro.AvroComponent;
-import me.tfeng.toolbox.common.ThrowingFunction;
-import play.libs.F.Promise;
+import me.tfeng.playmods.spring.ApplicationError;
+import me.tfeng.playmods.spring.ExceptionWrapper;
+import me.tfeng.playmods.spring.ThrowingSupplier;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -86,21 +88,28 @@ public class OAuth2Component {
   @Qualifier("play-mods.avro.component")
   private AvroComponent avroComponent;
 
-  public <T, E extends Throwable> Promise<T> callWithAuthorizationToken(String token,
-      ThrowingFunction<Promise<T>, E> function) throws E {
+  public <T, E extends Throwable> CompletionStage<T> callWithAuthorizationToken(String token,
+      ThrowingSupplier<CompletionStage<T>, E> supplier) {
     if (token == null) {
       SecurityContextHolder.clearContext();
-      return function.apply();
+      try {
+        return supplier.get();
+      } catch (Throwable t) {
+        throw ExceptionWrapper.wrap(t);
+      }
     } else {
-      Promise<me.tfeng.playmods.oauth2.Authentication> promise = getAuthenticationManager().authenticate(token);
-      return promise.flatMap(authentication -> {
+      CompletionStage<me.tfeng.playmods.oauth2.Authentication> completionStage =
+          getAuthenticationManager().authenticate(token);
+      return completionStage.thenCompose(authentication -> {
         org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
             new org.springframework.security.oauth2.provider.OAuth2Authentication(
                 getOAuth2Request(authentication.getClient()),
                 getAuthentication(authentication.getUser()));
         SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
         try {
-          return function.apply();
+          return supplier.get();
+        } catch(Throwable t) {
+          throw ExceptionWrapper.wrap(t);
         } finally {
           SecurityContextHolder.clearContext();
         }
@@ -116,10 +125,10 @@ public class OAuth2Component {
     Class<?> implementationClass = implementation.getClass();
     return interfaceClass.cast(Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[] { interfaceClass },
         (proxy, method, args) -> {
-          if (Promise.class.isAssignableFrom(method.getReturnType())) {
+          if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
             org.springframework.security.core.Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
-            return Promise.promise(() -> {
+            return CompletableFuture.supplyAsync(ExceptionWrapper.wrapFunction(() -> {
               Method implementationMethod = implementationClass.getMethod(method.getName(), method.getParameterTypes());
               SecurityContextHolder.getContext().setAuthentication(authentication);
               try {
@@ -129,7 +138,7 @@ public class OAuth2Component {
               } finally {
                 SecurityContextHolder.clearContext();
               }
-            }, avroComponent.getExecutionContext());
+            }), avroComponent.getExecutor());
           } else {
             try {
               return method.invoke(implementation, args);
@@ -145,18 +154,18 @@ public class OAuth2Component {
       return null;
     } else {
       List<GrantedAuthority> authorities = user.getAuthorities().stream()
-          .map(authority -> new SimpleGrantedAuthority(authority.toString()))
+          .map(SimpleGrantedAuthority::new)
           .collect(Collectors.toList());
-      return new UsernamePasswordAuthenticationToken(user.getId().toString(), null, authorities);
+      return new UsernamePasswordAuthenticationToken(user.getId(), null, authorities);
     }
   }
 
   private OAuth2Request getOAuth2Request(ClientAuthentication client) {
     List<GrantedAuthority> authorities = client.getAuthorities().stream()
-        .map(authority -> new SimpleGrantedAuthority(authority.toString()))
+        .map(SimpleGrantedAuthority::new)
         .collect(Collectors.toList());
-    Set<String> scopes = client.getScopes().stream().map(scope -> scope.toString()).collect(Collectors.toSet());
-    return new OAuth2Request(Collections.emptyMap(), client.getId().toString(), authorities, true, scopes,
+    Set<String> scopes = client.getScopes().stream().map(scope -> scope).collect(Collectors.toSet());
+    return new OAuth2Request(Collections.emptyMap(), client.getId(), authorities, true, scopes,
         Collections.emptySet(), null, Collections.emptySet(), Collections.emptyMap());
   }
 }

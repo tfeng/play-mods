@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,12 +21,12 @@
 package me.tfeng.playmods.avro.d2;
 
 import java.net.URL;
+import java.util.concurrent.Executor;
 
 import org.apache.avro.Protocol;
 import org.apache.avro.ipc.AsyncHttpTransceiver;
 
 import me.tfeng.playmods.http.RequestPoster;
-import scala.concurrent.ExecutionContext;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -35,8 +35,8 @@ public class AvroD2Transceiver extends AsyncHttpTransceiver {
 
   private final String remoteName;
 
-  public AvroD2Transceiver(Protocol protocol, URL url, ExecutionContext executionContext, RequestPoster requestPoster) {
-    super(url, executionContext, requestPoster);
+  public AvroD2Transceiver(Protocol protocol, URL url, Executor executor, RequestPoster requestPoster) {
+    super(url, executor, requestPoster);
     remoteName = AvroD2Helper.getUri(protocol).toString();
   }
 

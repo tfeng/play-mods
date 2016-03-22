@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,11 +22,10 @@ package me.tfeng.playmods.avro;
 
 import java.net.URL;
 
-import com.ning.http.client.AsyncHttpClient;
-
 import me.tfeng.playmods.http.RequestPreparer;
 import play.Logger;
 import play.Logger.ALogger;
+import play.libs.ws.WSRequest;
 import play.mvc.Controller;
 import play.mvc.Http.Request;
 
@@ -39,22 +38,22 @@ public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
 
   private static final ALogger LOG = Logger.of(AuthorizationPreservingRequestPreparer.class);
 
-  private Request request;
+  private Request controllerRequest;
 
   public AuthorizationPreservingRequestPreparer() {
     try {
-      request = Controller.request();
+      controllerRequest = Controller.request();
     } catch (RuntimeException e) {
       LOG.info("Unable to get current request; do not preserve authorization header");
     }
   }
 
   @Override
-  public void prepare(AsyncHttpClient.BoundRequestBuilder builder, String contentType, URL url) {
-    if (request != null) {
-      String authorization = request.getHeader(AUTHORIZATION_HEADER);
+  public void prepare(WSRequest request, String contentType, URL url) {
+    if (request != null && controllerRequest != null) {
+      String authorization = controllerRequest.getHeader(AUTHORIZATION_HEADER);
       if (authorization != null) {
-        builder.setHeader(AUTHORIZATION_HEADER, authorization);
+        request.setHeader(AUTHORIZATION_HEADER, authorization);
       }
     }
   }

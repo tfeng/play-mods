@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.avro.Protocol;
 import org.apache.avro.Schema;
@@ -37,10 +40,9 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 
 import me.tfeng.playmods.avro.AsyncTransceiver;
-import me.tfeng.playmods.avro.RemoteInvocationException;
 import me.tfeng.playmods.avro.ResponseProcessor;
 import me.tfeng.playmods.http.RequestPreparer;
-import play.libs.F.Promise;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -54,13 +56,13 @@ public class AsyncRequestor extends SpecificRequestor {
     }
   }
 
-  private final int requestTimeout;
-
   private final RequestPreparer requestPreparer;
+
+  private final int requestTimeout;
 
   private final ResponseProcessor responseProcessor;
 
-  private boolean useGenericRecord;
+  private final boolean useGenericRecord;
 
   public AsyncRequestor(Protocol protocol, AsyncTransceiver transceiver, SpecificData data, int requestTimeout,
       RequestPreparer requestPreparer, ResponseProcessor responseProcessor, boolean useGenericRecord)
@@ -96,30 +98,33 @@ public class AsyncRequestor extends SpecificRequestor {
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-    Promise<Object> promise = request(method.getName(), args);
-    if (Promise.class.isAssignableFrom(method.getReturnType())) {
-      return promise;
+    CompletionStage<Object> completionStage = request(method.getName(), args);
+    if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
+      return completionStage;
     } else {
       try {
-        return promise.get(requestTimeout);
-      } catch (RemoteInvocationException e) {
-        Throwable cause = e.getCause();
+        return completionStage.toCompletableFuture().get(requestTimeout, TimeUnit.MILLISECONDS);
+      } catch (ExecutionException t) {
+        Throwable cause = ExceptionWrapper.unwrap(t);
+        if (cause instanceof RuntimeException) {
+          throw cause;
+        }
         Class<?>[] exceptionTypes = method.getExceptionTypes();
         for (Class<?> exceptionType : exceptionTypes) {
           if (exceptionType.isInstance(cause)) {
             throw cause;
           }
         }
-        throw e;
+        throw t;
       }
     }
   }
 
-  public Promise<Object> request(String message, Object[] args) throws Exception {
+  public CompletionStage<Object> request(String message, Object[] args) throws Exception {
     AsyncTransceiver transceiver = (AsyncTransceiver) getTransceiver();
     Request ipcRequest = new Request(message, args, new RPCContext());
     CallFuture<Object> callFuture = ipcRequest.getMessage().isOneWay() ? null : new CallFuture<>();
-    return transceiver.transceive(ipcRequest.getBytes(), requestPreparer).map(response -> {
+    return transceiver.transceive(ipcRequest.getBytes(), requestPreparer).thenApply(response -> {
       Object responseObject;
       try {
         responseObject = responseProcessor.process(this, ipcRequest, message, response);
@@ -138,7 +143,7 @@ public class AsyncRequestor extends SpecificRequestor {
       } else if (callFuture.getError() == null) {
         return callFuture.getResult();
       } else {
-        throw callFuture.getError();
+        throw ExceptionWrapper.wrap(callFuture.getError());
       }
     });
   }

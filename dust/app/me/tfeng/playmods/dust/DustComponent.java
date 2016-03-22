@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,6 +21,8 @@
 package me.tfeng.playmods.dust;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -33,11 +35,10 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import akka.dispatch.ExecutionContexts;
-import akka.dispatch.Futures;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.dust.JsEnginePool;
 import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
-import play.libs.F.Promise;
 import scala.concurrent.ExecutionContextExecutorService;
 
 /**
@@ -71,7 +72,8 @@ public class DustComponent implements Startable {
   public void onStop() throws Throwable {
   }
 
-  public Promise<String> render(String template, JsonNode data) {
-    return Promise.wrap(Futures.future(() -> enginePool.render(template, data), executionContext));
+  public CompletionStage<String> render(String template, JsonNode data) {
+    return CompletableFuture.supplyAsync(ExceptionWrapper.wrapFunction(() -> enginePool.render(template, data)),
+        executionContext);
   }
 }

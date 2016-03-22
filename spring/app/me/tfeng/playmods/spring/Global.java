@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,39 +18,43 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.modules;
+package me.tfeng.playmods.spring;
+
+import org.springframework.context.ConfigurableApplicationContext;
+
+import com.google.inject.Injector;
 
 import me.tfeng.toolbox.spring.ApplicationManager;
 import play.Application;
 import play.GlobalSettings;
-import play.libs.F.Promise;
-import play.mvc.Http.RequestHeader;
-import play.mvc.Result;
-import play.mvc.Results;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public class SpringGlobalSettings extends GlobalSettings {
-
-  @Override
-  public Promise<Result> onError(RequestHeader request, Throwable t) {
-    return Promise.pure(getResultOnError(t));
-  }
+@SuppressWarnings("deprecation")
+public class Global extends GlobalSettings {
 
   @Override
   public void onStart(Application application) {
-    ApplicationManager applicationManager = SpringModule.getApplicationManager(application);
-    applicationManager.start();
+    ApplicationManager applicationManager = getApplicationManager(application);
     applicationManager.processInjection(this);
+
+    Injector injector = application.injector().instanceOf(Injector.class);
+    ConfigurableApplicationContext applicationContext = applicationManager.getApplicationContext();
+    for (String beanName : applicationContext.getBeanDefinitionNames()) {
+      Object bean = applicationContext.getBean(beanName);
+      injector.injectMembers(bean);
+    }
+
+    applicationManager.start();
   }
 
   @Override
   public void onStop(Application application) {
-    SpringModule.getApplicationManager(application).stop();
+    getApplicationManager(application).stop();
   }
 
-  protected Result getResultOnError(Throwable t) {
-    return Results.badRequest();
+  protected ApplicationManager getApplicationManager(Application application) {
+    return application.injector().instanceOf(ApplicationManager.class);
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -228,9 +228,8 @@ public class OAuth2JsonConverter {
     Set<String> resourceIds = Sets.newHashSet(arrayToStrings(node.get(STRING_RESOURCE_IDS)));
     Set<String> responseTypes = Sets.newHashSet(arrayToStrings(node.get(STRING_RESPONSE_TYPES)));
     Set<String> scope = Sets.newHashSet(arrayToStrings(node.get(STRING_SCOPE)));
-    OAuth2Request request = new OAuth2Request(requestParameters, clientId, authorities, approved, scope, resourceIds,
-        redirectUri, responseTypes, null);
-    return request;
+    return new OAuth2Request(requestParameters, clientId, authorities, approved, scope, resourceIds, redirectUri,
+        responseTypes, null);
   }
 
   public static UserDetails jsonToUserDetails(JsonNode json) {
@@ -238,11 +237,10 @@ public class OAuth2JsonConverter {
       return null;
     }
     ObjectNode node = (ObjectNode) json;
-    UserDetails userDetails = new User(getText(node, STRING_USERNAME), getText(node, STRING_PASSWORD),
+    return new User(getText(node, STRING_USERNAME), getText(node, STRING_PASSWORD),
         node.get(STRING_ENABLED).booleanValue(), node.get(STRING_ACCOUNT_NON_EXPIRED).booleanValue(),
         node.get(STRING_CREDENTIALS_NON_EXPIRED).booleanValue(), node.get(STRING_ACCOUNT_NON_LOCKED).booleanValue(),
         arrayToGrantedAuthorities(node.get(STRING_AUTHORITIES)));
-    return userDetails;
   }
 
   public static UsernamePasswordAuthenticationToken jsonToUsernamePasswordAuthentication(JsonNode json) {

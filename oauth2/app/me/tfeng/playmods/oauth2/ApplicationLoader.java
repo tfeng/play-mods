@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,18 +18,22 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.sbtplugins
+package me.tfeng.playmods.oauth2;
 
-import me.tfeng.playmods.Versions
-import me.tfeng.sbt.plugins.SbtDust
-import sbt.{AutoPlugin, addSbtPlugin, toGroupID}
+import java.util.Map;
+
+import play.Configuration;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-object Dust extends AutoPlugin {
+public class ApplicationLoader extends me.tfeng.playmods.spring.ApplicationLoader {
 
-  override lazy val projectSettings = settings
+  @Override
+  protected void addExtraConfiguration(Configuration initialConfig, Map<String, Object> extra) {
+    super.addExtraConfiguration(initialConfig, extra);
 
-  lazy val settings = SbtDust.settings ++ Seq(addSbtPlugin("me.tfeng.play-mods" % "dust" % Versions.project))
+    setExtraConfigurationValue(initialConfig, extra, "play.http.actionCreator", ActionCreator.class.getName());
+    setExtraConfigurationValue(initialConfig, extra, "play.http.errorHandler", ErrorHandler.class.getName());
+  }
 }

@@ -18,21 +18,44 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.avro;
+package me.tfeng.playmods.oauth2;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
+import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
 
-import me.tfeng.playmods.http.RequestPreparer;
-import play.libs.F.Promise;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+
+import play.mvc.Action;
+import play.mvc.Action.Simple;
+import play.mvc.Http.Context;
+import play.mvc.Http.Request;
+import play.mvc.Result;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public interface AsyncTransceiver {
+public class ActionCreator implements play.http.ActionCreator {
 
-  CompletionStage<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer)
-      throws IOException;
+  public class OAuth2Action extends Simple {
+
+    @Override
+    public CompletionStage<Result> call(Context context) {
+      return actionProvider.get().authorizeAndCall(context, delegate);
+    }
+  }
+
+  private final OAuth2Action action = new OAuth2Action();
+
+  private final Provider<OAuth2AuthenticationAction> actionProvider;
+
+  @Inject
+  public ActionCreator(Provider<OAuth2AuthenticationAction> actionProvider) {
+    this.actionProvider = actionProvider;
+  }
+
+  @Override
+  public Action createAction(Request request, Method actionMethod) {
+    return action;
+  }
 }

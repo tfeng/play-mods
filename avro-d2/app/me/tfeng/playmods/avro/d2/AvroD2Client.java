@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +43,6 @@ import me.tfeng.playmods.avro.d2.factories.TransceiverFactory;
 import me.tfeng.toolbox.common.Constants;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.F.Promise;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -71,7 +71,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
 
   private final TransceiverFactory transceiverFactory;
 
-  private boolean useGenericRecord;
+  private final boolean useGenericRecord;
 
   private final ZooKeeperProvider zkProvider;
 
@@ -142,7 +142,7 @@ public class AvroD2Client implements Watcher, InvocationHandler {
     }
   }
 
-  public Promise<Object> request(String message, Object[] request) throws Exception {
+  public CompletionStage<Object> request(String message, Object[] request) throws Exception {
     return setupRequest().request(message, request);
   }
 

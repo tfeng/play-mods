@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,13 +20,13 @@
 
 package me.tfeng.playmods.http.factories;
 
+import org.asynchttpclient.AsyncHttpClientConfig;
+import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.ning.http.client.AsyncHttpClientConfigBean;
 
 import play.Logger;
 import play.Logger.ALogger;
@@ -41,16 +41,16 @@ public class ClientConfigFactory implements InitializingBean {
 
   @Autowired(required = false)
   @Qualifier("play-mods.http.async-http-client-config")
-  private AsyncHttpClientConfigBean asyncHttpClientConfig;
+  private AsyncHttpClientConfig asyncHttpClientConfig;
 
   @Value("${play-mods.http.compression-enforced:false}")
   private boolean compressionEnforced;
 
-  @Value("${play-mods.http.connection-timeout:60000}")
-  private int connectionTimeout;
+  @Value("${play-mods.http.connect-timeout:60000}")
+  private int connectTimeout;
 
-  @Value("${play-mods.http.max-total-connections:200}")
-  private int maxTotalConnections;
+  @Value("${play-mods.http.max-connections:200}")
+  private int maxConnections;
 
   @Value("${play-mods.http.request-timeout:10000}")
   private int requestTimeout;
@@ -58,17 +58,18 @@ public class ClientConfigFactory implements InitializingBean {
   @Override
   public void afterPropertiesSet() throws Exception {
     if (asyncHttpClientConfig == null) {
-      asyncHttpClientConfig = new AsyncHttpClientConfigBean();
-      asyncHttpClientConfig.setCompressionEnforced(compressionEnforced);
-      asyncHttpClientConfig.setConnectionTimeOut(connectionTimeout);
-      asyncHttpClientConfig.setMaxTotalConnections(maxTotalConnections);
-      asyncHttpClientConfig.setRequestTimeout(requestTimeout);
+      asyncHttpClientConfig = new DefaultAsyncHttpClientConfig.Builder()
+          .setCompressionEnforced(compressionEnforced)
+          .setConnectTimeout(connectTimeout)
+          .setMaxConnections(maxConnections)
+          .setRequestTimeout(requestTimeout)
+          .build();
     } else {
       LOG.info("Async http client config is provided through Spring wiring; ignoring explicit properties");
     }
   }
 
-  public AsyncHttpClientConfigBean create() {
+  public AsyncHttpClientConfig create() {
     return asyncHttpClientConfig;
   }
 }

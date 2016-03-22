@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -45,18 +45,18 @@ public class ResponderFactory {
   private AvroD2ProtocolVersionResolver protocolVersionResolver;
 
   public AsyncResponder create(Class<?> iface, Object impl) {
-    return new AsyncResponder(iface, impl, avroComponent.getExecutionContext(), protocolVersionResolver);
+    return new AsyncResponder(iface, impl, avroComponent.getExecutor(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Class<?> iface, Object impl, SpecificData data) {
-    return new AsyncResponder(iface, impl, data, avroComponent.getExecutionContext(), protocolVersionResolver);
+    return new AsyncResponder(iface, impl, data, avroComponent.getExecutor(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Protocol protocol, Object impl) {
-    return new AsyncResponder(protocol, impl, avroComponent.getExecutionContext(), protocolVersionResolver);
+    return new AsyncResponder(protocol, impl, avroComponent.getExecutor(), protocolVersionResolver);
   }
 
   public AsyncResponder create(Protocol protocol, Object impl, SpecificData data) {
-    return new AsyncResponder(protocol, impl, data, avroComponent.getExecutionContext(), protocolVersionResolver);
+    return new AsyncResponder(protocol, impl, data, avroComponent.getExecutor(), protocolVersionResolver);
   }
 }

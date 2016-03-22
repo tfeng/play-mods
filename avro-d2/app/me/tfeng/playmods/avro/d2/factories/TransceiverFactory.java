@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -46,6 +46,6 @@ public class TransceiverFactory {
   private HttpRequestPoster requestPoster;
 
   public AvroD2Transceiver create(Protocol protocol, URL url) {
-    return new AvroD2Transceiver(protocol, url, avroComponent.getExecutionContext(), requestPoster);
+    return new AvroD2Transceiver(protocol, url, avroComponent.getExecutor(), requestPoster);
   }
 }

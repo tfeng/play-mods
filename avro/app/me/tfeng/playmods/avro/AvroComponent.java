@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -25,6 +25,7 @@ import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import org.apache.avro.ipc.AsyncRequestor;
 import org.apache.avro.specific.SpecificData;
@@ -34,14 +35,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.google.inject.Inject;
+
+import akka.actor.ActorSystem;
 import me.tfeng.playmods.avro.factories.RequestorFactory;
 import me.tfeng.playmods.avro.factories.TransceiverFactory;
 import me.tfeng.toolbox.spring.ApplicationManager;
 import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.Akka;
-import play.libs.HttpExecution;
+import play.libs.concurrent.HttpExecution;
 import scala.concurrent.ExecutionContext;
 
 /**
@@ -53,6 +56,9 @@ public class AvroComponent implements Startable {
   public static final String PROTOCOL_IMPLEMENTATIONS_KEY = "play-mods.avro.protocol-implementations";
 
   private static final ALogger LOG = Logger.of(AvroComponent.class);
+
+  @Inject
+  private ActorSystem actorSystem;
 
   @Autowired
   @Qualifier("play-mods.spring.application-manager")
@@ -95,7 +101,7 @@ public class AvroComponent implements Startable {
     return client(interfaceClass, transceiverFactory.create(url), data);
   }
 
-  public ExecutionContext getExecutionContext() {
+  public Executor getExecutor() {
     return HttpExecution.fromThread(executionContext);
   }
 
@@ -113,10 +119,10 @@ public class AvroComponent implements Startable {
     }
 
     try {
-      executionContext = Akka.system().dispatchers().lookup(executionContextId);
+      executionContext = actorSystem.dispatchers().lookup(executionContextId);
     } catch (Exception e) {
       LOG.warn("Unable to obtain execution context " + executionContextId + "; using default", e);
-      executionContext = Akka.system().dispatchers().defaultGlobalDispatcher();
+      executionContext = actorSystem.dispatchers().defaultGlobalDispatcher();
     }
   }
 

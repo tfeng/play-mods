@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,51 +18,36 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.modules;
+package me.tfeng.playmods.oauth2;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+
+import javax.inject.Provider;
 
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
-import me.tfeng.playmods.oauth2.OAuth2AuthenticationAction;
-import me.tfeng.playmods.oauth2.OAuth2Component;
-import play.Application;
-import play.libs.F.Promise;
-import play.mvc.Action;
-import play.mvc.Action.Simple;
-import play.mvc.Http.Context;
-import play.mvc.Http.Request;
+import com.google.inject.Inject;
+
+import play.Configuration;
+import play.Environment;
+import play.api.OptionalSourceMapper;
+import play.api.routing.Router;
 import play.mvc.Result;
 import play.mvc.Results;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public class OAuth2GlobalSettings extends AvroIpcGlobalSettings {
+public class ErrorHandler extends me.tfeng.playmods.spring.ErrorHandler {
 
-  public class OAuth2Action extends Simple {
-
-    @Override
-    public Promise<Result> call(Context context) throws Throwable {
-      return authenticationAction.authorizeAndCall(context, delegate);
-    }
-  }
-
-  private OAuth2AuthenticationAction authenticationAction;
-
-  @Override
-  public Action<Void> onRequest(Request request, Method actionMethod) {
-    return new OAuth2Action();
-  }
-
-  public void onStart(Application application) {
-    super.onStart(application);
-    authenticationAction = new OAuth2AuthenticationAction();
+  @Inject
+  public ErrorHandler(Configuration configuration, Environment environment, OptionalSourceMapper sourceMapper,
+      Provider<Router> routes) {
+    super(configuration, environment, sourceMapper, routes);
   }
 
   @Override
-  protected Result getResultOnError(Throwable t) {
+  public Result getResultOnError(Throwable t) {
     if (OAuth2Component.isAuthenticationError(t)) {
       return Results.unauthorized();
     } else {

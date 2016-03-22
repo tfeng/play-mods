@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,21 +20,18 @@
 
 package me.tfeng.playmods.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.CompletionStage;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import com.ning.http.client.AsyncCompletionHandler;
-import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
-import com.ning.http.client.Response;
-
 import me.tfeng.playmods.http.factories.ClientFactory;
-import play.libs.F.Promise;
+import play.libs.ws.WSRequest;
 import play.libs.ws.WSResponse;
-import play.libs.ws.ning.NingWSResponse;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -42,36 +39,17 @@ import play.libs.ws.ning.NingWSResponse;
 @Component("play-mods.http.request-poster")
 public class HttpRequestPoster implements RequestPoster {
 
-  private static final String CONTENT_TYPE_HEADER = "content-type";
-
   @Autowired
   @Qualifier("play-mods.http.client-factory")
   private ClientFactory clientFactory;
 
   @Override
-  public Promise<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
-      throws IOException {
-    scala.concurrent.Promise<WSResponse> scalaPromise = scala.concurrent.Promise$.MODULE$.apply();
-    BoundRequestBuilder builder = clientFactory.create()
-        .preparePost(url.toString())
-        .setHeader(CONTENT_TYPE_HEADER, contentType)
-        .setContentLength(body.length)
-        .setBody(body);
+  public CompletionStage<WSResponse> postRequest(URL url, String contentType, byte[] body,
+      RequestPreparer requestPreparer) throws IOException {
+    WSRequest request = clientFactory.create().url(url.toString()).setContentType(contentType);
     if (requestPreparer != null) {
-      requestPreparer.prepare(builder, contentType, url);
+      requestPreparer.prepare(request, contentType, url);
     }
-    builder.execute(new AsyncCompletionHandler<Response>() {
-      @Override
-      public Response onCompleted(Response response) {
-        scalaPromise.success(new NingWSResponse(response));
-        return response;
-      }
-
-      @Override
-      public void onThrowable(Throwable t) {
-        scalaPromise.failure(t);
-      }
-    });
-    return Promise.wrap(scalaPromise.future());
+    return request.post(new ByteArrayInputStream(body));
   }
 }

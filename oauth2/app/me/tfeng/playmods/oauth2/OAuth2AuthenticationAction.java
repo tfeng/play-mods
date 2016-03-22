@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,13 +20,15 @@
 
 package me.tfeng.playmods.oauth2;
 
+import java.util.concurrent.CompletionStage;
+
 import org.apache.http.HttpStatus;
 
-import me.tfeng.playmods.avro.ApplicationError;
-import me.tfeng.playmods.avro.RemoteInvocationException;
-import me.tfeng.playmods.modules.SpringModule;
+import com.google.inject.Inject;
+
+import me.tfeng.playmods.spring.ApplicationError;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.spring.ApplicationManager;
-import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http.Context;
 import play.mvc.Http.Request;
@@ -45,23 +47,21 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
 
   private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
 
-  private final OAuth2Component oauth2Component;
+  @Inject
+  private ApplicationManager applicationManager;
 
-  public OAuth2AuthenticationAction() {
-    ApplicationManager applicationManager = SpringModule.getApplicationManager();
-    oauth2Component = applicationManager.getBean(OAUTH2_COMPONENT_KEY, OAuth2Component.class);
-  }
-
-  public Promise<Result> authorizeAndCall(Context context, Action<?> delegate) throws Throwable {
+  public CompletionStage<Result> authorizeAndCall(Context context, Action<?> delegate) {
+    OAuth2Component oauth2Component = applicationManager.getBean(OAUTH2_COMPONENT_KEY, OAuth2Component.class);
     Request request = context.request();
     String token = getAuthorizationToken(request);
-    return oauth2Component.callWithAuthorizationToken(token,
-        () -> delegate.call(context).recover(t -> handleAuthenticationError(token, t)))
-        .recover(t -> handleAuthenticationError(token, t));
+    return oauth2Component
+        .callWithAuthorizationToken(token, () -> delegate.call(context)
+            .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t))))
+        .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t)));
   }
 
   @Override
-  public Promise<Result> call(Context context) throws Throwable {
+  public CompletionStage<Result> call(Context context) {
     return authorizeAndCall(context, delegate);
   }
 
@@ -79,17 +79,10 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   }
 
   protected Result handleAuthenticationError(String token, Throwable t) throws Throwable {
+    t = ExceptionWrapper.unwrap(t);
     if (OAuth2Component.isAuthenticationError(t)) {
-      if (t instanceof RemoteInvocationException) {
-        t = t.getCause();
-      }
       if (!(t instanceof ApplicationError)) {
-        throw ApplicationError.newBuilder()
-            .setStatus(HttpStatus.SC_UNAUTHORIZED)
-            .setMessage$("Authentication failed")
-            .setValue("Authentication failed for token " + token)
-            .setCause(t)
-            .build();
+        throw new ApplicationError(HttpStatus.SC_UNAUTHORIZED, "Authentication failed for token " + token, t);
       }
     }
     throw t;

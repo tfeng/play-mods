@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -24,12 +24,12 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.avro.ipc.AsyncRequestor;
+import org.apache.avro.ipc.AsyncRequestor.Request;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public interface ResponseProcessor {
 
-  Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message, List<ByteBuffer> response)
-      throws Exception;
+  Object process(AsyncRequestor requestor, Request request, String message, List<ByteBuffer> response) throws Exception;
 }

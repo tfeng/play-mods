@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -62,7 +62,7 @@ public class AvroD2ProtocolVersionResolver implements ProtocolVersionResolver {
   @Qualifier("play-mods.avro-d2.component")
   private AvroD2Component avroD2Component;
 
-  private Map<List<String>, Protocol> protocolCache = Maps.newHashMap();
+  private final Map<List<String>, Protocol> protocolCache = Maps.newHashMap();
 
   @Override
   public Protocol resolve(Responder responder, Decoder in, Encoder out, Transceiver connection) throws IOException {

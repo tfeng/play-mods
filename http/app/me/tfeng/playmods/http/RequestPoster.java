@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,8 +22,8 @@ package me.tfeng.playmods.http;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.CompletionStage;
 
-import play.libs.F.Promise;
 import play.libs.ws.WSResponse;
 
 /**
@@ -31,6 +31,6 @@ import play.libs.ws.WSResponse;
  */
 public interface RequestPoster {
 
-  Promise<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
+  CompletionStage<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
       throws IOException;
 }

@@ -8,7 +8,7 @@ lazy val parent = project in file(".") aggregate(avro, `avro-d2`, dust, http, oa
 
 lazy val spring = project enablePlugins(PlayJava)
 
-lazy val dust = project enablePlugins(PlayScala) dependsOn(spring)
+lazy val dust = project enablePlugins(PlayJava) dependsOn(spring)
 
 lazy val http = project enablePlugins(PlayJava) dependsOn(spring)
 

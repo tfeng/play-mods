@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,7 +22,10 @@ package me.tfeng.playmods.avro;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Protocol;
@@ -32,21 +35,24 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.specific.SpecificResponder;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.inject.Inject;
 
+import akka.util.ByteIterator;
+import akka.util.ByteString;
 import me.tfeng.playmods.avro.factories.ResponderFactory;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
+import play.Application;
 import play.Logger;
 import play.Logger.ALogger;
-import play.Play;
-import play.libs.F.Promise;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
@@ -65,6 +71,9 @@ public class JsonIpcController extends Controller {
 
   private static final ALogger LOG = Logger.of(JsonIpcController.class);
 
+  @Inject
+  private Application application;
+
   @Autowired
   @Qualifier("play-mods.avro.component")
   private AvroComponent avroComponent;
@@ -74,29 +83,37 @@ public class JsonIpcController extends Controller {
   private ResponderFactory responderFactory;
 
   @BodyParser.Of(BodyParser.Raw.class)
-  public Promise<Result> post(String message, String protocol) throws Throwable {
+  public CompletionStage<Result> post(String message, String protocol) throws Throwable {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
     ContentType contentType = ContentType.parse(contentTypeHeader);
     if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
       throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
     }
 
-    Class<?> protocolClass = Play.application().classloader().loadClass(protocol);
+    Class<?> protocolClass = application.classloader().loadClass(protocol);
     Object implementation = avroComponent.getProtocolImplementations().get(protocolClass);
     Protocol avroProtocol = AvroHelper.getProtocol(protocolClass);
     Message avroMessage = avroProtocol.getMessages().get(message);
-    byte[] bytes = request().body().asRaw().asBytes();
+    ByteString bytes = request().body().asRaw().asBytes();
     AsyncResponder responder = createResponder(protocolClass, implementation);
     Object request = getRequest(responder, avroMessage, bytes);
     Method method = getMethod(responder, implementation, avroMessage, request);
 
-    Promise<?> promise;
-    if (Promise.class.isAssignableFrom(method.getReturnType())) {
-      promise = (Promise<?>) responder.respond(avroMessage, request);
+    CompletionStage<?> completionStage;
+    if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
+      completionStage = (CompletionStage<?>) responder.respond(avroMessage, request);
     } else {
-      promise = Promise.pure(responder.respond(avroMessage, request));
+      try {
+        completionStage = CompletableFuture.completedFuture(responder.respond(avroMessage, request));
+      } catch (SpecificExceptionBase e) {
+        return CompletableFuture.completedFuture(Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), e)));
+      }
     }
-    return promise.map(result -> (Result) Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result)));
+    return completionStage
+        .thenApply(ExceptionWrapper.wrapFunction(result ->
+            Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result))))
+        .exceptionally(ExceptionWrapper.wrapFunction(error ->
+            Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error))));
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
@@ -120,13 +137,17 @@ public class JsonIpcController extends Controller {
     }
   }
 
-  private Object getRequest(Responder responder, Message message, byte[] data) throws IOException {
-    Schema schema = message.getRequest();
-    if (ArrayUtils.isEmpty(data)) {
-      // The method takes no argument; use empty data.
-      data = "{}".getBytes(Constants.UTF8);
+  private Object getRequest(Responder responder, Message message, ByteString bytes) throws IOException {
+    ByteIterator iterator = bytes.iterator();
+    InputStream inputStream;
+    if (iterator.hasNext()) {
+      inputStream = iterator.asInputStream();
+    } else {
+      byte[] emptyBytes = "{}".getBytes(Constants.UTF8);
+      inputStream = new ByteArrayInputStream(emptyBytes);
     }
-    JsonNode node = Json.parse(new ByteArrayInputStream(data));
+    Schema schema = message.getRequest();
+    JsonNode node = Json.parse(inputStream);
     node = AvroHelper.convertFromSimpleRecord(schema, node);
     return responder.readRequest(message.getRequest(), message.getRequest(),
         DecoderFactory.get().jsonDecoder(schema, node.toString()));

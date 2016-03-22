@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,26 +21,33 @@
 package me.tfeng.playmods.security;
 
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.stereotype.Component;
 
-import play.cache.Cache;
+import com.google.inject.Inject;
+
+import play.cache.CacheApi;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
+@Component("play-mods.security.default-context-store")
 public class CacheSecurityContextStore implements SecurityContextStore {
+
+  @Inject
+  private CacheApi cacheApi;
 
   @Override
   public SecurityContext load(String id) {
-    return (SecurityContext) Cache.get(id);
+    return (SecurityContext) cacheApi.get(id);
   }
 
   @Override
   public void remove(String id) {
-    Cache.remove(id);
+    cacheApi.remove(id);
   }
 
   @Override
   public void save(String id, SecurityContext securityContext, int expirationInSeconds) {
-    Cache.set(id, securityContext, expirationInSeconds);
+    cacheApi.set(id, securityContext, expirationInSeconds);
   }
 }

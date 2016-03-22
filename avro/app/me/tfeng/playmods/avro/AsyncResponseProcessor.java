@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -29,6 +29,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.ipc.AsyncRequestor;
+import org.apache.avro.ipc.AsyncRequestor.Request;
 import org.apache.avro.ipc.HandshakeMatch;
 import org.apache.avro.ipc.HandshakeResponse;
 import org.apache.avro.ipc.RPCContext;
@@ -42,8 +43,8 @@ import org.apache.avro.util.ByteBufferInputStream;
 public class AsyncResponseProcessor implements ResponseProcessor {
 
   @Override
-  public Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message,
-      List<ByteBuffer> response) throws Exception {
+  public Object process(AsyncRequestor requestor, Request request, String message, List<ByteBuffer> response)
+      throws Exception {
     ByteBufferInputStream bbi = new ByteBufferInputStream(response);
     BinaryDecoder in = DecoderFactory.get().binaryDecoder(bbi, null);
     HandshakeResponse handshake = AvroConstants.HANDSHAKE_RESPONSE_READER.read(null, in);

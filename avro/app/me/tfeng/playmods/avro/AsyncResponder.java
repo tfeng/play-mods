@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -23,6 +23,9 @@ package me.tfeng.playmods.avro;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Protocol;
@@ -43,10 +46,9 @@ import org.apache.avro.util.ByteBufferOutputStream;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.F.Promise;
-import scala.concurrent.ExecutionContext;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -55,45 +57,45 @@ public class AsyncResponder extends SpecificResponder {
 
   private static final ALogger LOG = Logger.of(AsyncResponder.class);
 
-  private final ExecutionContext executionContext;
+  private final Executor executor;
 
   private final Object impl;
 
   private final ProtocolVersionResolver protocolVersionResolver;
 
-  public AsyncResponder(Class<?> iface, Object impl, ExecutionContext executionContext,
+  public AsyncResponder(Class<?> iface, Object impl, Executor executor,
       ProtocolVersionResolver protocolVersionResolver) {
     super(iface, impl);
     this.impl = impl;
-    this.executionContext = executionContext;
+    this.executor = executor;
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public AsyncResponder(Class<?> iface, Object impl, SpecificData data, ExecutionContext executionContext,
+  public AsyncResponder(Class<?> iface, Object impl, SpecificData data, Executor executor,
       ProtocolVersionResolver protocolVersionResolver) {
     super(iface, impl, data);
     this.impl = impl;
-    this.executionContext = executionContext;
+    this.executor = executor;
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public AsyncResponder(Protocol protocol, Object impl, ExecutionContext executionContext,
+  public AsyncResponder(Protocol protocol, Object impl, Executor executor,
       ProtocolVersionResolver protocolVersionResolver) {
     super(protocol, impl);
     this.impl = impl;
-    this.executionContext = executionContext;
+    this.executor = executor;
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public AsyncResponder(Protocol protocol, Object impl, SpecificData data, ExecutionContext executionContext,
+  public AsyncResponder(Protocol protocol, Object impl, SpecificData data, Executor executor,
       ProtocolVersionResolver protocolVersionResolver) {
     super(protocol, impl, data);
     this.impl = impl;
-    this.executionContext = executionContext;
+    this.executor = executor;
     this.protocolVersionResolver = protocolVersionResolver;
   }
 
-  public Promise<List<ByteBuffer>> asyncRespond(List<ByteBuffer> buffers) throws Exception {
+  public CompletionStage<List<ByteBuffer>> asyncRespond(List<ByteBuffer> buffers) throws Exception {
     Decoder in = DecoderFactory.get().binaryDecoder(new ByteBufferInputStream(buffers), null);
     ByteBufferOutputStream bbo = new ByteBufferOutputStream();
     BinaryEncoder out = EncoderFactory.get().binaryEncoder(bbo, null);
@@ -103,7 +105,7 @@ public class AsyncResponder extends SpecificResponder {
     out.flush();
     if (remote == null) {
       // handshake failed
-      return Promise.pure(bbo.getBufferList());
+      return CompletableFuture.completedFuture(bbo.getBufferList());
     }
     handshake = bbo.getBufferList();
 
@@ -112,7 +114,7 @@ public class AsyncResponder extends SpecificResponder {
     String messageName = in.readString(null).toString();
     if (messageName.equals("")) {
       // a handshake ping
-      return Promise.pure(handshake);
+      return CompletableFuture.completedFuture(handshake);
     }
     Message rm = remote.getMessages().get(messageName);
     if (rm == null) {
@@ -131,43 +133,51 @@ public class AsyncResponder extends SpecificResponder {
     }
 
     List<ByteBuffer> handshakeFinal = handshake;
-    Promise<Object> promise;
+    CompletionStage<Object> completionStage;
     if (impl.getClass().getAnnotation(AvroClient.class) != null) {
-      promise = (Promise<Object>) respond(m, request);
+      completionStage = (CompletionStage<Object>) respond(m, request);
     } else {
       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      promise = Promise.promise(() -> {
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        try {
-          return respond(m, request);
-        } finally{
-          SecurityContextHolder.clearContext();
-        }
-      }).flatMap(result -> {
-        if (result instanceof Promise) {
-          return (Promise<Object>) result;
-        } else {
-          return Promise.pure(result);
-        }
-      }, executionContext);
+      completionStage = CompletableFuture
+          .supplyAsync(() -> {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+              return respond(m, request);
+            } catch (Throwable t) {
+              throw ExceptionWrapper.wrap(t);
+            } finally{
+              SecurityContextHolder.clearContext();
+            }
+          }, executor)
+          .thenCompose(result -> {
+            if (result instanceof CompletionStage) {
+              return (CompletionStage<Object>) result;
+            } else {
+              return CompletableFuture.completedFuture(result);
+            }
+          });
     }
-    return promise.map(result -> {
-      RPCContextHelper.setResponse(context, result);
-      processResult(bbo, out, context, m, handshakeFinal, result, null);
-      return bbo.getBufferList();
-    }).recover(e -> {
-      if (e instanceof RemoteInvocationException) {
-        e = e.getCause();
-      }
-      if (e instanceof Exception) {
-        LOG.warn("Exception thrown while processing Avro IPC request", e);
-        RPCContextHelper.setError(context, (Exception) e);
-        processResult(bbo, out, context, m, handshakeFinal, null, (Exception) e);
-        return bbo.getBufferList();
-      } else {
-        throw e;
-      }
-    });
+    return completionStage
+        .thenApply(result -> {
+          RPCContextHelper.setResponse(context, result);
+          try {
+            processResult(bbo, out, context, m, handshakeFinal, result, null);
+          } catch (Throwable t) {
+            throw ExceptionWrapper.wrap(t);
+          }
+          return bbo.getBufferList();
+        })
+        .exceptionally(t -> {
+          t = ExceptionWrapper.unwrap(t);
+          LOG.warn("Exception thrown while processing Avro IPC request", t);
+          RPCContextHelper.setError(context, (Exception) t);
+          try {
+            processResult(bbo, out, context, m, handshakeFinal, null, (Exception) t);
+          } catch (Throwable t2) {
+            throw ExceptionWrapper.wrap(t2);
+          }
+          return bbo.getBufferList();
+        });
   }
 
   protected Protocol handshake(Decoder in, Encoder out, Transceiver connection) throws IOException {

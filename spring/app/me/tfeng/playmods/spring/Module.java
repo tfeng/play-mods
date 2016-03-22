@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.modules;
+package me.tfeng.playmods.spring;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,19 +37,15 @@ import org.springframework.core.annotation.Order;
 import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.name.Names;
 
-import me.tfeng.toolbox.spring.ApplicationManager;
-import play.Application;
 import play.Configuration;
 import play.Environment;
-import play.Play;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */@Order
-public class SpringModule implements Module {
+public class Module implements com.google.inject.Module {
 
   private static class BeanProvider<T> implements Provider<T> {
 
@@ -87,14 +83,6 @@ public class SpringModule implements Module {
   public static final List<String> INTERNAL_CONFIG_LOCATIONS =
       Collections.singletonList("classpath*:play-mods.spring/**/*.xml");
 
-  public static ApplicationManager getApplicationManager() {
-    return Play.application().injector().instanceOf(ApplicationManager.class);
-  }
-
-  public static ApplicationManager getApplicationManager(Application application) {
-    return application.injector().instanceOf(ApplicationManager.class);
-  }
-
   private static <T> void bind(ConfigurableListableBeanFactory beanFactory, Binder binder, Class<T> type, String name) {
     if (beanFactory.getBeansOfType(type).size() == 1) {
       Provider<? extends T> provider = new BeanProvider<>(beanFactory, type, name);
@@ -110,7 +98,7 @@ public class SpringModule implements Module {
 
   private ConfigurableApplicationContext applicationContext;
 
-  public SpringModule(Environment environment, Configuration configuration) {
+  public Module(Environment environment, Configuration configuration) {
     applicationContext = createApplicationContext(environment, configuration);
   }
 

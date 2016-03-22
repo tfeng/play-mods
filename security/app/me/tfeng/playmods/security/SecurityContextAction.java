@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,12 +21,13 @@
 package me.tfeng.playmods.security;
 
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import me.tfeng.playmods.modules.SpringModule;
+import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.spring.ApplicationManager;
-import play.libs.F.Promise;
+import play.inject.Injector;
 import play.mvc.Action;
 import play.mvc.Http.Context;
 import play.mvc.Http.Cookie;
@@ -39,15 +40,16 @@ public class SecurityContextAction extends Action<SecurityContext> {
 
   private static final String SECURITY_COMPONENT_KEY = "play-mods.security.component";
 
-  private final SecurityComponent securityComponent;
+  private Injector injector;
 
-  public SecurityContextAction() {
-    ApplicationManager applicationManager = SpringModule.getApplicationManager();
-    securityComponent = applicationManager.getBean(SECURITY_COMPONENT_KEY, SecurityComponent.class);
+  public SecurityContextAction(Injector injector) {
+    this.injector = injector;
   }
 
   @Override
-  public Promise<Result> call(Context context) throws Throwable {
+  public CompletionStage<Result> call(Context context) {
+    ApplicationManager applicationManager = injector.instanceOf(ApplicationManager.class);
+    SecurityComponent securityComponent = applicationManager.getBean(SECURITY_COMPONENT_KEY, SecurityComponent.class);
     SecurityContextStore securityContextStore = securityComponent.getContextStore();
 
     String cookieName = configuration.value().isEmpty() ? securityComponent.getCookieName() : configuration.value();
@@ -55,32 +57,34 @@ public class SecurityContextAction extends Action<SecurityContext> {
     String id = cookie == null ? null : cookie.value();
 
     if (id != null) {
-      SecurityContextHolder.setContext(securityContextStore.load(id));
+      ExceptionWrapper.wrap(() -> SecurityContextHolder.setContext(securityContextStore.load(id)));
     }
 
-    return delegate.call(context).map(result -> {
+    return delegate.call(context).thenApply(result -> {
       org.springframework.security.core.context.SecurityContext currentContext = SecurityContextHolder.getContext();
       SecurityContextHolder.clearContext();
       org.springframework.security.core.context.SecurityContext emptyContext = SecurityContextHolder.getContext();
       boolean hasSecurityContext = !currentContext.equals(emptyContext);
 
-      if (id != null) {
-        securityContextStore.remove(id);
-        if (!hasSecurityContext) {
-          context.response().discardCookie(cookieName);
-        }
-      }
-
-      if (hasSecurityContext) {
-        int expirationInSeconds = configuration.expirationInSeconds();
-        if (expirationInSeconds < 0) {
-          expirationInSeconds = securityComponent.getExpirationInSeconds();
+      ExceptionWrapper.wrap(() -> {
+        if (id != null) {
+          securityContextStore.remove(id);
+          if (!hasSecurityContext) {
+            context.response().discardCookie(cookieName);
+          }
         }
 
-        String newId = UUID.randomUUID().toString();
-        context.response().setCookie(cookieName, newId, expirationInSeconds);
-        securityContextStore.save(newId, SecurityContextHolder.getContext(), expirationInSeconds);
-      }
+        if (hasSecurityContext) {
+          int expirationInSeconds = configuration.expirationInSeconds();
+          if (expirationInSeconds < 0) {
+            expirationInSeconds = securityComponent.getExpirationInSeconds();
+          }
+
+          String newId = UUID.randomUUID().toString();
+          context.response().setCookie(Cookie.builder(cookieName, newId).withMaxAge(expirationInSeconds).build());
+          securityContextStore.save(newId, SecurityContextHolder.getContext(), expirationInSeconds);
+        }
+      });
 
       return result;
     });

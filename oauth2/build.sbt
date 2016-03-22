@@ -6,4 +6,4 @@ Settings.common
 
 libraryDependencies += "org.springframework.security.oauth" % "spring-security-oauth2" % Versions.springSecurityOauth
 
-SbtAvro.settings
+Avro.settings

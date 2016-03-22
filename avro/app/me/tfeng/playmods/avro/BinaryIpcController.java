@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,8 +22,10 @@ package me.tfeng.playmods.avro;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.apache.avro.ipc.AsyncHttpTransceiver;
 import org.apache.http.entity.ContentType;
@@ -31,9 +33,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.google.inject.Inject;
+
 import me.tfeng.playmods.avro.factories.ResponderFactory;
-import play.Play;
-import play.libs.F.Promise;
+import me.tfeng.playmods.spring.ExceptionWrapper;
+import play.Application;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Result;
@@ -49,6 +53,9 @@ public class BinaryIpcController extends Controller {
 
   public static final String CONTENT_TYPE_HEADER = "content-type";
 
+  @Inject
+  private Application application;
+
   @Autowired
   @Qualifier("play-mods.avro.component")
   private AvroComponent avroComponent;
@@ -58,26 +65,31 @@ public class BinaryIpcController extends Controller {
   private ResponderFactory responderFactory;
 
   @BodyParser.Of(BodyParser.Raw.class)
-  public Promise<Result> post(String protocol) throws Throwable {
+  public CompletionStage<Result> post(String protocol) throws Throwable {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
     ContentType contentType = ContentType.parse(contentTypeHeader);
     if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
       throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
     }
 
-    Class<?> protocolClass = Play.application().classloader().loadClass(protocol);
+    Class<?> protocolClass = application.classloader().loadClass(protocol);
     Object implementation = avroComponent.getProtocolImplementations().get(protocolClass);
-    byte[] bytes = request().body().asRaw().asBytes();
-
-    List<ByteBuffer> buffers = AsyncHttpTransceiver.readBuffers(new ByteArrayInputStream(bytes));
+    InputStream inputStream = request().body().asRaw().asBytes().iterator().asInputStream();
+    List<ByteBuffer> buffers = AsyncHttpTransceiver.readBuffers(inputStream);
     AsyncResponder responder = createResponder(protocolClass, implementation);
-    Promise<List<ByteBuffer>> response = responder.asyncRespond(buffers);
-    return response.map(result -> {
+    CompletionStage<List<ByteBuffer>> response = responder.asyncRespond(buffers);
+
+    return response.thenApply(result -> {
       ByteArrayOutputStream outStream = new ByteArrayOutputStream();
       try {
         AsyncHttpTransceiver.writeBuffers(result, outStream);
+      } catch (Throwable t) {
+        throw ExceptionWrapper.wrap(t);
       } finally {
-        outStream.close();
+        try {
+          outStream.close();
+        } catch (Exception e) {
+        }
       }
       return Results.ok(outStream.toByteArray());
     });

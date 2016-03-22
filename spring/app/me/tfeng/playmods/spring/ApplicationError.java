@@ -18,21 +18,36 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.avro;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
-import me.tfeng.playmods.http.RequestPreparer;
-import play.libs.F.Promise;
+package me.tfeng.playmods.spring;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-public interface AsyncTransceiver {
+public class ApplicationError extends RuntimeException {
 
-  CompletionStage<List<ByteBuffer>> transceive(List<ByteBuffer> request, RequestPreparer postRequestPreparer)
-      throws IOException;
+  private int status;
+
+  public ApplicationError(int status) {
+    super();
+    this.status = status;
+  }
+
+  public ApplicationError(int status, String message) {
+    super(message);
+    this.status = status;
+  }
+
+  public ApplicationError(int status, String message, Throwable cause) {
+    super(message, cause);
+    this.status = status;
+  }
+
+  public ApplicationError(int status, Throwable cause) {
+    super(cause);
+    this.status = status;
+  }
+
+  public int getStatus() {
+    return status;
+  }
 }

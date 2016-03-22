@@ -2,8 +2,6 @@ import me.tfeng.playmods._
 
 name := "avro"
 
-sbtPlugin := true
-
 Settings.common
 
 libraryDependencies ++= Seq(
@@ -12,9 +10,3 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpcore" % Versions.httpComponents,
   "org.springframework.security.oauth" % "spring-security-oauth2" % Versions.springSecurityOauth
 )
-
-addSbtPlugin("me.tfeng.sbt-plugins" % "avro-plugin" % Versions.sbtPlugins)
-
-unmanagedSourceDirectories in Compile += baseDirectory.value / "../project"
-
-SbtAvro.settings

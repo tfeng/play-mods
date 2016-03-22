@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -31,6 +31,8 @@ import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.Transceiver;
 import org.springframework.stereotype.Component;
 
+import me.tfeng.playmods.spring.ExceptionWrapper;
+
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
@@ -45,7 +47,7 @@ public class HandshakingProtocolVersionResolver implements ProtocolVersionResolv
           Transceiver.class);
       HANDSHAKE_METHOD.setAccessible(true);
     } catch (NoSuchMethodException | SecurityException e) {
-      throw new RuntimeException("Unable to get handshake method", e);
+      throw ExceptionWrapper.wrap(e);
     }
   }
 
@@ -54,12 +56,12 @@ public class HandshakingProtocolVersionResolver implements ProtocolVersionResolv
     try {
       return (Protocol) HANDSHAKE_METHOD.invoke(responder, in, out, connection);
     } catch (IllegalAccessException e) {
-      throw new RuntimeException("Unable to invoke handshake in responder");
+      throw ExceptionWrapper.wrap(e);
     } catch (InvocationTargetException e) {
       if (e.getTargetException() instanceof IOException) {
         throw (IOException) e.getTargetException();
       } else {
-        throw new RuntimeException("Handshake in responder raised an exception", e.getTargetException());
+        throw ExceptionWrapper.wrap(e.getTargetException());
       }
     }
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -34,6 +34,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.ipc.AsyncRequestor;
+import org.apache.avro.ipc.AsyncRequestor.Request;
 import org.apache.avro.ipc.HandshakeMatch;
 import org.apache.avro.ipc.HandshakeResponse;
 import org.apache.avro.ipc.RPCContext;
@@ -68,8 +69,8 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
   private final Map<String, Protocol> protocolCache = Collections.synchronizedMap(Maps.newHashMap());
 
   @Override
-  public Object process(AsyncRequestor requestor, AsyncRequestor.Request request, String message,
-      List<ByteBuffer> response) throws Exception {
+  public Object process(AsyncRequestor requestor, Request request, String message, List<ByteBuffer> response)
+      throws Exception {
     ByteBufferInputStream bbi = new ByteBufferInputStream(response);
     BinaryDecoder in = DecoderFactory.get().binaryDecoder(bbi, null);
 
@@ -89,7 +90,7 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
     }
 
     RPCContext context = request.getContext();
-    RPCContextHelper.setResponseCallMeta(context, AvroHelper.META_READER.read(null, in));
+    RPCContextHelper.setResponseCallMeta(context, AvroConstants.META_READER.read(null, in));
 
     if (!in.readBoolean()) {
       Schema localSchema = localProtocol.getMessages().get(message).getResponse();

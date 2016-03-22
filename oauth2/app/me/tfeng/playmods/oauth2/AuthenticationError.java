@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Thomas Feng
+ * Copyright 2016 Thomas Feng
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,20 +18,30 @@
  * limitations under the License.
  */
 
-package me.tfeng.playmods.sbtplugins
+package me.tfeng.playmods.oauth2;
 
-import me.tfeng.playmods.Versions
-import me.tfeng.sbt.plugins.SbtAvro
-import sbt.{AutoPlugin, addSbtPlugin, toGroupID}
+import org.apache.http.HttpStatus;
+
+import me.tfeng.playmods.spring.ApplicationError;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
-object AvroD2 extends AutoPlugin {
+public class AuthenticationError extends ApplicationError {
 
-  override lazy val projectSettings = settings
+  public AuthenticationError() {
+    super(HttpStatus.SC_UNAUTHORIZED);
+  }
 
-  lazy val settings = SbtAvro.settings ++ Seq(
-    addSbtPlugin("me.tfeng.play-mods" % "avro-d2" % Versions.project),
-    SbtAvro.Keys.extraSchemaClasses += "me.tfeng.playmods.avro.ApplicationError")
+  public AuthenticationError(String message) {
+    super(HttpStatus.SC_UNAUTHORIZED, message);
+  }
+
+  public AuthenticationError(String message, Throwable cause) {
+    super(HttpStatus.SC_UNAUTHORIZED, message, cause);
+  }
+
+  public AuthenticationError(Throwable cause) {
+    super(HttpStatus.SC_UNAUTHORIZED, cause);
+  }
 }
