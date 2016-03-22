@@ -47,6 +47,7 @@ import com.google.inject.Inject;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
 import me.tfeng.playmods.avro.factories.ResponderFactory;
+import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
@@ -112,8 +113,13 @@ public class JsonIpcController extends Controller {
     return completionStage
         .thenApply(ExceptionWrapper.wrapFunction(result ->
             Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result))))
-        .exceptionally(ExceptionWrapper.wrapFunction(error ->
-            Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error))));
+        .exceptionally(ExceptionWrapper.wrapFunction(error -> {
+          if (error instanceof SpecificExceptionBase) {
+            return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
+          } else {
+            throw error;
+          }
+        }));
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {

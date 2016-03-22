@@ -34,9 +34,9 @@ object Settings {
   )
 
   val disablePublishing: Seq[Setting[_]] = Seq(
-    /* publishArtifact := false,
+    publishArtifact := false,
     publish := (),
     publishLocal := (),
-    publishM2 := () */
+    publishM2 := ()
   )
 }

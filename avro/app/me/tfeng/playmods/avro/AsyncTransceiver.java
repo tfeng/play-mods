@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import me.tfeng.playmods.http.RequestPreparer;
-import play.libs.F.Promise;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
