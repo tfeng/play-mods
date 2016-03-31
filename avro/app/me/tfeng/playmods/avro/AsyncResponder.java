@@ -47,15 +47,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import me.tfeng.playmods.spring.ExceptionWrapper;
-import play.Logger;
-import play.Logger.ALogger;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public class AsyncResponder extends SpecificResponder {
-
-  private static final ALogger LOG = Logger.of(AsyncResponder.class);
 
   private final Executor executor;
 
@@ -169,7 +165,6 @@ public class AsyncResponder extends SpecificResponder {
         })
         .exceptionally(t -> {
           t = ExceptionWrapper.unwrap(t);
-          LOG.warn("Exception thrown while processing Avro IPC request", t);
           RPCContextHelper.setError(context, (Exception) t);
           try {
             processResult(bbo, out, context, m, handshakeFinal, null, (Exception) t);

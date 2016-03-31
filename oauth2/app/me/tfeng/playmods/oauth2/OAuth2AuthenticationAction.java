@@ -32,6 +32,7 @@ import me.tfeng.toolbox.spring.ApplicationManager;
 import play.mvc.Action;
 import play.mvc.Http.Context;
 import play.mvc.Http.Request;
+import play.mvc.Http.RequestHeader;
 import play.mvc.Result;
 
 /**
@@ -39,13 +40,26 @@ import play.mvc.Result;
  */
 public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
 
-  private static final String ACCESS_TOKEN = "access_token";
+  public static final String ACCESS_TOKEN = "access_token";
 
-  private static final String AUTHORIZATION_HEADER = "authorization";
+  public static final String AUTHORIZATION_HEADER = "authorization";
 
-  private static final String BEARER = "bearer";
+  public static final String BEARER = "bearer";
 
   private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
+
+  public static String getAuthorizationToken(RequestHeader request) {
+    String[] headers = request.headers().get(AUTHORIZATION_HEADER);
+    if (headers != null) {
+      for (String header : headers) {
+        if (header.toLowerCase().startsWith(BEARER.toLowerCase())) {
+          String authHeaderValue = header.substring(BEARER.length()).trim();
+          return authHeaderValue.split(",")[0];
+        }
+      }
+    }
+    return request.getQueryString(ACCESS_TOKEN);
+  }
 
   @Inject
   private ApplicationManager applicationManager;
@@ -63,19 +77,6 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   @Override
   public CompletionStage<Result> call(Context context) {
     return authorizeAndCall(context, delegate);
-  }
-
-  protected String getAuthorizationToken(Request request) {
-    String[] headers = request.headers().get(AUTHORIZATION_HEADER);
-    if (headers != null) {
-      for (String header : headers) {
-        if (header.toLowerCase().startsWith(BEARER.toLowerCase())) {
-          String authHeaderValue = header.substring(BEARER.length()).trim();
-          return authHeaderValue.split(",")[0];
-        }
-      }
-    }
-    return request.getQueryString(ACCESS_TOKEN);
   }
 
   protected Result handleAuthenticationError(String token, Throwable t) throws Throwable {
