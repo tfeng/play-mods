@@ -3,4 +3,4 @@ resolvers += "Typesafe repository" at "https://dl.bintray.com/typesafe/maven-rel
 // The Play plugin
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.3")
 
-addSbtPlugin("me.tfeng.sbt-plugins" % "avro" % "0.8.5-SNAPSHOT")
+addSbtPlugin("me.tfeng.sbt-plugins" % "avro" % "0.8.5")
