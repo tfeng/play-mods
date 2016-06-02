@@ -47,7 +47,6 @@ import com.google.inject.Inject;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
 import me.tfeng.playmods.avro.factories.ResponderFactory;
-import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
@@ -107,7 +106,7 @@ public class JsonIpcController extends Controller {
       try {
         completionStage = CompletableFuture.completedFuture(responder.respond(avroMessage, request));
       } catch (SpecificExceptionBase e) {
-        return CompletableFuture.completedFuture(Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), e)));
+        return CompletableFuture.completedFuture(createErrorResult(avroMessage, protocol, e));
       }
     }
     return completionStage
@@ -115,7 +114,7 @@ public class JsonIpcController extends Controller {
             Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result))))
         .exceptionally(ExceptionWrapper.wrapFunction(error -> {
           if (error instanceof SpecificExceptionBase) {
-            return Results.badRequest(AvroHelper.toJson(avroMessage.getErrors(), error));
+            return createErrorResult(avroMessage, protocol, (SpecificExceptionBase) error);
           } else {
             throw error;
           }
@@ -124,6 +123,13 @@ public class JsonIpcController extends Controller {
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
     return responderFactory.create(protocolClass, implementation);
+  }
+
+  private Result createErrorResult(Message message, String protocol, Throwable t) throws IOException {
+    String errorContent = AvroHelper.toJson(message.getErrors(), t);
+    LOG.error("Error occurred while processing request (message = " + message.getName() + ", protocol = " + protocol
+        + "): " + errorContent, t);
+    return Results.badRequest(errorContent);
   }
 
   private Method getMethod(SpecificResponder responder, Object implementation, Message message, Object request) {
