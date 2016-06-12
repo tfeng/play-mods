@@ -107,7 +107,7 @@ public class AvroD2ResponseProcessor implements ResponseProcessor {
       if (error instanceof SpecificExceptionBase) {
         SpecificExceptionBase specificError = (SpecificExceptionBase) error;
         Schema errorSchema = serverProtocol.getMessages().get(message).getErrors();
-        String errorMessage = AvroHelper.toJson(errorSchema, error);
+        String errorMessage = AvroHelper.toSimpleJson(errorSchema, error);
         Constructor<? extends SpecificExceptionBase> constructor =
             BeanUtils.findConstructor(specificError.getClass(), true, String.class);
         if (constructor != null) {

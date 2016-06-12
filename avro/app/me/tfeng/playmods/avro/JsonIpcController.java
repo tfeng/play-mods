@@ -106,29 +106,37 @@ public class JsonIpcController extends Controller {
       try {
         completionStage = CompletableFuture.completedFuture(responder.respond(avroMessage, request));
       } catch (SpecificExceptionBase e) {
-        return CompletableFuture.completedFuture(createErrorResult(avroMessage, protocol, e));
+        return CompletableFuture.completedFuture(createErrorResult(avroProtocol, avroMessage, e));
       }
     }
     return completionStage
-        .thenApply(ExceptionWrapper.wrapFunction(result ->
-            Results.ok(AvroHelper.toJson(avroMessage.getResponse(), result))))
-        .exceptionally(ExceptionWrapper.wrapFunction(error -> {
+        .thenApply(ExceptionWrapper.wrapFunction(result -> createResult(avroProtocol, avroMessage, result)))
+        .exceptionally(error -> {
+          error = ExceptionWrapper.unwrap(error);
           if (error instanceof SpecificExceptionBase) {
-            return createErrorResult(avroMessage, protocol, (SpecificExceptionBase) error);
+            try {
+              return createErrorResult(avroProtocol, avroMessage, error);
+            } catch (IOException e) {
+              throw ExceptionWrapper.wrap(e);
+            }
           } else {
-            throw error;
+            throw ExceptionWrapper.wrap(error);
           }
-        }));
+        });
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
     return responderFactory.create(protocolClass, implementation);
   }
 
-  private Result createErrorResult(Message message, String protocol, Throwable t) throws IOException {
-    String errorContent = AvroHelper.toJson(message.getErrors(), t);
-    LOG.error("Error occurred while processing request (message = " + message.getName() + ", protocol = " + protocol
-        + "): " + errorContent, t);
+  protected Result createResult(Protocol protocol, Message message, Object result) throws Exception {
+    return Results.ok(AvroHelper.toSimpleJson(message.getResponse(), result));
+  }
+
+  private Result createErrorResult(Protocol protocol, Message message, Throwable t) throws IOException {
+    String errorContent = AvroHelper.toSimpleJson(message.getErrors(), t);
+    LOG.error("Error occurred while processing request (message = " + message.getName() + ", protocol = "
+        + protocol.getName() + "): " + errorContent, t);
     return Results.badRequest(errorContent);
   }
 
