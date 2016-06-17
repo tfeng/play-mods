@@ -48,6 +48,7 @@ import akka.util.ByteIterator;
 import akka.util.ByteString;
 import me.tfeng.playmods.avro.factories.ResponderFactory;
 import me.tfeng.playmods.spring.ExceptionWrapper;
+import me.tfeng.playmods.spring.ThrowingFunction;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
 import play.Application;
@@ -56,6 +57,7 @@ import play.Logger.ALogger;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
+import play.mvc.Http.Context;
 import play.mvc.Result;
 import play.mvc.Results;
 
@@ -99,6 +101,10 @@ public class JsonIpcController extends Controller {
     Object request = getRequest(responder, avroMessage, bytes);
     Method method = getMethod(responder, implementation, avroMessage, request);
 
+    ThrowingFunction<Object, CompletionStage<Result>, Exception> resultConverter =
+        getResultConverter(avroProtocol, avroMessage);
+    ThrowingFunction<Throwable, Result, Exception> errorConverter = getErrorConverter(avroProtocol, avroMessage);
+
     CompletionStage<?> completionStage;
     if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
       completionStage = (CompletionStage<?>) responder.respond(avroMessage, request);
@@ -106,38 +112,54 @@ public class JsonIpcController extends Controller {
       try {
         completionStage = CompletableFuture.completedFuture(responder.respond(avroMessage, request));
       } catch (SpecificExceptionBase e) {
-        return CompletableFuture.completedFuture(createErrorResult(avroProtocol, avroMessage, e));
+        return CompletableFuture.completedFuture(errorConverter.apply(e));
       }
     }
+
     return completionStage
-        .thenApply(ExceptionWrapper.wrapFunction(result -> createResult(avroProtocol, avroMessage, result)))
-        .exceptionally(error -> {
-          error = ExceptionWrapper.unwrap(error);
-          if (error instanceof SpecificExceptionBase) {
-            try {
-              return createErrorResult(avroProtocol, avroMessage, error);
-            } catch (IOException e) {
-              throw ExceptionWrapper.wrap(e);
-            }
-          } else {
-            throw ExceptionWrapper.wrap(error);
-          }
-        });
+        .thenCompose(ExceptionWrapper.wrapFunction(resultConverter))
+        .exceptionally(ExceptionWrapper.wrapFunction(errorConverter));
+  }
+
+  protected Result convertErrorResult(Protocol protocol, Message message, Throwable t) throws IOException {
+    t = ExceptionWrapper.unwrap(t);
+    if (t instanceof SpecificExceptionBase) {
+      try {
+        String errorContent = AvroHelper.toSimpleJson(message.getErrors(), t);
+        LOG.error("Error occurred while processing request (message = " + message.getName() + ", protocol = "
+            + protocol.getName() + "): " + errorContent, t);
+        return Results.badRequest(errorContent);
+      } catch (IOException e) {
+        throw ExceptionWrapper.wrap(e);
+      }
+    } else {
+      throw ExceptionWrapper.wrap(t);
+    }
+  }
+
+  protected CompletionStage<Result> convertResult(Protocol protocol, Message message, Object result) throws Exception {
+    return CompletableFuture.completedFuture(Results.ok(AvroHelper.toSimpleJson(message.getResponse(), result)));
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
     return responderFactory.create(protocolClass, implementation);
   }
 
-  protected Result createResult(Protocol protocol, Message message, Object result) throws Exception {
-    return Results.ok(AvroHelper.toSimpleJson(message.getResponse(), result));
+  protected ThrowingFunction<Throwable, Result, Exception> getErrorConverter(Protocol protocol, Message message) {
+    return error -> convertErrorResult(protocol, message, error);
   }
 
-  private Result createErrorResult(Protocol protocol, Message message, Throwable t) throws IOException {
-    String errorContent = AvroHelper.toSimpleJson(message.getErrors(), t);
-    LOG.error("Error occurred while processing request (message = " + message.getName() + ", protocol = "
-        + protocol.getName() + "): " + errorContent, t);
-    return Results.badRequest(errorContent);
+  protected ThrowingFunction<Object, CompletionStage<Result>, Exception> getResultConverter(Protocol protocol, Message message) {
+    Context context = Context.current();
+    return result -> {
+      Context oldContext = Context.current.get();
+      try {
+        Context.current.set(context);
+        return convertResult(protocol, message, result);
+      } finally {
+        Context.current.set(oldContext);
+      }
+    };
   }
 
   private Method getMethod(SpecificResponder responder, Object implementation, Message message, Object request) {
