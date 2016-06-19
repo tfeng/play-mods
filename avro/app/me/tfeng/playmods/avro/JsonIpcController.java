@@ -85,7 +85,7 @@ public class JsonIpcController extends Controller {
   private ResponderFactory responderFactory;
 
   @BodyParser.Of(BodyParser.Raw.class)
-  public CompletionStage<Result> post(String message, String protocol) throws Throwable {
+  public CompletionStage<Result> post(String protocol, String message) throws Throwable {
     String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
     ContentType contentType = ContentType.parse(contentTypeHeader);
     if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
