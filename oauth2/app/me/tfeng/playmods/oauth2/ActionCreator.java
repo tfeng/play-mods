@@ -45,8 +45,6 @@ public class ActionCreator implements play.http.ActionCreator {
     }
   }
 
-  private final OAuth2Action action = new OAuth2Action();
-
   private final Provider<OAuth2AuthenticationAction> actionProvider;
 
   @Inject
@@ -56,6 +54,6 @@ public class ActionCreator implements play.http.ActionCreator {
 
   @Override
   public Action createAction(Request request, Method actionMethod) {
-    return action;
+    return new OAuth2Action();
   }
 }
