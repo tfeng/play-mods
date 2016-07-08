@@ -39,6 +39,8 @@ import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -151,13 +153,17 @@ public class JsonIpcController extends Controller {
 
   protected ThrowingFunction<Object, CompletionStage<Result>, Exception> getResultConverter(Protocol protocol, Message message) {
     Context context = Context.current();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
     return result -> {
       Context oldContext = Context.current.get();
+      SecurityContext oldSecurityContext = SecurityContextHolder.getContext();
       try {
         Context.current.set(context);
+        SecurityContextHolder.setContext(securityContext);
         return convertResult(protocol, message, result);
       } finally {
         Context.current.set(oldContext);
+        SecurityContextHolder.setContext(oldSecurityContext);
       }
     };
   }
