@@ -34,7 +34,9 @@ import play.mvc.Http.Request;
  */
 public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
 
-  public static final String AUTHORIZATION_HEADER = "authorization";
+  public static final String AUTHORIZATION_HEADER = "Authorization";
+
+  public static final String BEARER = "Bearer";
 
   private static final ALogger LOG = Logger.of(AuthorizationPreservingRequestPreparer.class);
 
@@ -50,10 +52,15 @@ public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
 
   @Override
   public void prepare(WSRequest request, String contentType, URL url) {
-    if (request != null && controllerRequest != null) {
-      String authorization = controllerRequest.getHeader(AUTHORIZATION_HEADER);
+    if (request != null) {
+      String authorization = IpcContextHolder.get(AUTHORIZATION_HEADER);
       if (authorization != null) {
-        request.setHeader(AUTHORIZATION_HEADER, authorization);
+        request.setHeader(AUTHORIZATION_HEADER, BEARER + " " + authorization);
+      } else if (controllerRequest != null) {
+        authorization = controllerRequest.getHeader(AUTHORIZATION_HEADER);
+        if (authorization != null) {
+          request.setHeader(AUTHORIZATION_HEADER, authorization);
+        }
       }
     }
   }

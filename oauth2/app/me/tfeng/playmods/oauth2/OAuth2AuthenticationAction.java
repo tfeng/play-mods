@@ -26,6 +26,7 @@ import org.apache.http.HttpStatus;
 
 import com.google.inject.Inject;
 
+import me.tfeng.playmods.avro.IpcContextHolder;
 import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.toolbox.spring.ApplicationManager;
@@ -42,9 +43,9 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
 
   public static final String ACCESS_TOKEN = "access_token";
 
-  public static final String AUTHORIZATION_HEADER = "authorization";
+  public static final String AUTHORIZATION_HEADER = "Authorization";
 
-  public static final String BEARER = "bearer";
+  public static final String BEARER = "Bearer";
 
   private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
 
@@ -68,10 +69,17 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
     OAuth2Component oauth2Component = applicationManager.getBean(OAUTH2_COMPONENT_KEY, OAuth2Component.class);
     Request request = context.request();
     String token = getAuthorizationToken(request);
-    return oauth2Component
-        .callWithAuthorizationToken(token, () -> delegate.call(context)
-            .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t))))
-        .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t)));
+
+    String oldToken = IpcContextHolder.get(AUTHORIZATION_HEADER);
+    try {
+      IpcContextHolder.set(AUTHORIZATION_HEADER, token);
+      return oauth2Component
+          .callWithAuthorizationToken(token, () -> delegate.call(context)
+              .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t))))
+          .exceptionally(ExceptionWrapper.wrapFunction(t -> handleAuthenticationError(token, t)));
+    } finally {
+      IpcContextHolder.set(AUTHORIZATION_HEADER, oldToken);
+    }
   }
 
   @Override
