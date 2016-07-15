@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 
 import me.tfeng.playmods.avro.AsyncTransceiver;
+import me.tfeng.playmods.avro.IpcContextHolder;
 import me.tfeng.playmods.avro.ResponseProcessor;
 import me.tfeng.playmods.http.RequestPreparer;
 import me.tfeng.playmods.spring.ExceptionWrapper;
@@ -124,9 +126,12 @@ public class AsyncRequestor extends SpecificRequestor {
     AsyncTransceiver transceiver = (AsyncTransceiver) getTransceiver();
     Request ipcRequest = new Request(message, args, new RPCContext());
     CallFuture<Object> callFuture = ipcRequest.getMessage().isOneWay() ? null : new CallFuture<>();
+    Map<String, Object> context = IpcContextHolder.getContext();
     return transceiver.transceive(ipcRequest.getBytes(), requestPreparer).thenApply(response -> {
       Object responseObject;
+      Map<String, Object> oldContext = IpcContextHolder.getContext();
       try {
+        IpcContextHolder.setContext(context);
         responseObject = responseProcessor.process(this, ipcRequest, message, response);
         if (callFuture != null) {
           callFuture.handleResult(responseObject);
@@ -135,6 +140,8 @@ public class AsyncRequestor extends SpecificRequestor {
         if (callFuture != null) {
           callFuture.handleError(e);
         }
+      } finally {
+        IpcContextHolder.setContext(oldContext);
       }
 
       // transceiverCallback.handleResult(response);
