@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Protocol;
@@ -39,8 +40,6 @@ import org.apache.avro.specific.SpecificExceptionBase;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,7 +58,6 @@ import play.Logger.ALogger;
 import play.libs.Json;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
-import play.mvc.Http.Context;
 import play.mvc.Result;
 import play.mvc.Results;
 
@@ -103,9 +101,8 @@ public class JsonIpcController extends Controller {
     Object request = getRequest(responder, avroMessage, bytes);
     Method method = getMethod(responder, implementation, avroMessage, request);
 
-    ThrowingFunction<Object, CompletionStage<Result>, Exception> resultConverter =
-        getResultConverter(avroProtocol, avroMessage);
-    ThrowingFunction<Throwable, Result, Exception> errorConverter = getErrorConverter(avroProtocol, avroMessage);
+    Function<Object, CompletionStage<Result>> resultConverter = getResultConverter(avroProtocol, avroMessage);
+    Function<Throwable, Result> errorConverter = getErrorConverter(avroProtocol, avroMessage);
 
     CompletionStage<?> completionStage;
     if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
@@ -118,12 +115,10 @@ public class JsonIpcController extends Controller {
       }
     }
 
-    return completionStage
-        .thenCompose(ExceptionWrapper.wrapFunction(resultConverter))
-        .exceptionally(ExceptionWrapper.wrapFunction(errorConverter));
+    return completionStage.thenCompose(IpcHelper.preserveContext(resultConverter)).exceptionally(errorConverter);
   }
 
-  protected Result convertErrorResult(Protocol protocol, Message message, Throwable t) throws IOException {
+  protected Result convertErrorResult(Protocol protocol, Message message, Throwable t) {
     t = ExceptionWrapper.unwrap(t);
     if (t instanceof SpecificExceptionBase) {
       try {
@@ -139,33 +134,25 @@ public class JsonIpcController extends Controller {
     }
   }
 
-  protected CompletionStage<Result> convertResult(Protocol protocol, Message message, Object result) throws Exception {
-    return CompletableFuture.completedFuture(Results.ok(AvroHelper.toSimpleJson(message.getResponse(), result)));
+  protected CompletionStage<Result> convertResult(Protocol protocol, Message message, Object result) {
+    try {
+      return CompletableFuture.completedFuture(Results.ok(AvroHelper.toSimpleJson(message.getResponse(), result)));
+    } catch (IOException e) {
+      throw ExceptionWrapper.wrap(e);
+    }
   }
 
   protected AsyncResponder createResponder(Class<?> protocolClass, Object implementation) {
     return responderFactory.create(protocolClass, implementation);
   }
 
-  protected ThrowingFunction<Throwable, Result, Exception> getErrorConverter(Protocol protocol, Message message) {
+  protected Function<Throwable, Result> getErrorConverter(Protocol protocol, Message message) {
     return error -> convertErrorResult(protocol, message, error);
   }
 
-  protected ThrowingFunction<Object, CompletionStage<Result>, Exception> getResultConverter(Protocol protocol, Message message) {
-    Context context = Context.current();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
-    return result -> {
-      Context oldContext = Context.current.get();
-      SecurityContext oldSecurityContext = SecurityContextHolder.getContext();
-      try {
-        Context.current.set(context);
-        SecurityContextHolder.setContext(securityContext);
-        return convertResult(protocol, message, result);
-      } finally {
-        Context.current.set(oldContext);
-        SecurityContextHolder.setContext(oldSecurityContext);
-      }
-    };
+  protected Function<Object, CompletionStage<Result>> getResultConverter(Protocol protocol,
+      Message message) {
+    return IpcHelper.preserveContext(result -> convertResult(protocol, message, result));
   }
 
   private Method getMethod(SpecificResponder responder, Object implementation, Message message, Object request) {

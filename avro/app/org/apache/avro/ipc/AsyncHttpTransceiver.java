@@ -27,20 +27,17 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import me.tfeng.playmods.avro.AsyncTransceiver;
-import me.tfeng.playmods.avro.IpcContextHolder;
+import me.tfeng.playmods.avro.IpcHelper;
 import me.tfeng.playmods.http.RequestPoster;
 import me.tfeng.playmods.http.RequestPreparer;
 import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
 import play.libs.ws.WSResponse;
-import play.mvc.Controller;
-import play.mvc.Http;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -94,22 +91,14 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
 
   protected CompletionStage<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers,
       RequestPreparer postRequestPreparer) {
-    Map<String, Object> context = IpcContextHolder.getContext();
     return CompletableFuture
         .supplyAsync(ExceptionWrapper.wrapFunction(() -> {
           ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           writeBuffers(buffers, outputStream);
           return outputStream;
         }), executor)
-        .thenCompose(ExceptionWrapper.wrapFunction(outputStream -> {
-          Map<String, Object> oldContext = IpcContextHolder.getContext();
-          try {
-            IpcContextHolder.setContext(context);
-            return postRequest(url, outputStream.toByteArray(), postRequestPreparer);
-          } finally {
-            IpcContextHolder.setContext(oldContext);
-          }
-        }));
+        .thenCompose(IpcHelper.preserveContext(ExceptionWrapper.wrapFunction(outputStream ->
+            postRequest(url, outputStream.toByteArray(), postRequestPreparer))));
   }
 
   protected String getContentType() {

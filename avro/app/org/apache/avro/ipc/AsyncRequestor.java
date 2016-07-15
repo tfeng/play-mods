@@ -22,9 +22,9 @@ package org.apache.avro.ipc;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 
 import me.tfeng.playmods.avro.AsyncTransceiver;
-import me.tfeng.playmods.avro.IpcContextHolder;
+import me.tfeng.playmods.avro.IpcHelper;
 import me.tfeng.playmods.avro.ResponseProcessor;
 import me.tfeng.playmods.http.RequestPreparer;
 import me.tfeng.playmods.spring.ExceptionWrapper;
@@ -126,32 +126,28 @@ public class AsyncRequestor extends SpecificRequestor {
     AsyncTransceiver transceiver = (AsyncTransceiver) getTransceiver();
     Request ipcRequest = new Request(message, args, new RPCContext());
     CallFuture<Object> callFuture = ipcRequest.getMessage().isOneWay() ? null : new CallFuture<>();
-    Map<String, Object> context = IpcContextHolder.getContext();
-    return transceiver.transceive(ipcRequest.getBytes(), requestPreparer).thenApply(response -> {
-      Object responseObject;
-      Map<String, Object> oldContext = IpcContextHolder.getContext();
-      try {
-        IpcContextHolder.setContext(context);
-        responseObject = responseProcessor.process(this, ipcRequest, message, response);
-        if (callFuture != null) {
-          callFuture.handleResult(responseObject);
-        }
-      } catch (Exception e) {
-        if (callFuture != null) {
-          callFuture.handleError(e);
-        }
-      } finally {
-        IpcContextHolder.setContext(oldContext);
-      }
+    return transceiver.transceive(ipcRequest.getBytes(), requestPreparer)
+        .thenApply(IpcHelper.preserveContext(response -> {
+          Object responseObject;
+          try {
+            responseObject = responseProcessor.process(this, ipcRequest, message, response);
+            if (callFuture != null) {
+              callFuture.handleResult(responseObject);
+            }
+          } catch (Exception e) {
+            if (callFuture != null) {
+              callFuture.handleError(e);
+            }
+          }
 
-      // transceiverCallback.handleResult(response);
-      if (callFuture == null) {
-        return null;
-      } else if (callFuture.getError() == null) {
-        return callFuture.getResult();
-      } else {
-        throw ExceptionWrapper.wrap(callFuture.getError());
-      }
-    });
+          // transceiverCallback.handleResult(response);
+          if (callFuture == null) {
+            return null;
+          } else if (callFuture.getError() == null) {
+            return callFuture.getResult();
+          } else {
+            throw ExceptionWrapper.wrap(callFuture.getError());
+          }
+        }));
   }
 }

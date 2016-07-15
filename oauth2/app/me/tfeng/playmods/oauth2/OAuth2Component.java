@@ -45,6 +45,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import me.tfeng.playmods.avro.AvroComponent;
+import me.tfeng.playmods.avro.IpcHelper;
 import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
 import me.tfeng.playmods.spring.ThrowingSupplier;
@@ -100,7 +101,7 @@ public class OAuth2Component {
     } else {
       CompletionStage<me.tfeng.playmods.oauth2.Authentication> completionStage =
           getAuthenticationManager().authenticate(token);
-      return completionStage.thenCompose(authentication -> {
+      return completionStage.thenCompose(IpcHelper.preserveContext(authentication -> {
         org.springframework.security.oauth2.provider.OAuth2Authentication oauth2Authentication =
             new org.springframework.security.oauth2.provider.OAuth2Authentication(
                 getOAuth2Request(authentication.getClient()),
@@ -113,7 +114,7 @@ public class OAuth2Component {
         } finally {
           SecurityContextHolder.clearContext();
         }
-      });
+      }));
     }
   }
 
@@ -128,7 +129,7 @@ public class OAuth2Component {
           if (CompletionStage.class.isAssignableFrom(method.getReturnType())) {
             org.springframework.security.core.Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
-            return CompletableFuture.supplyAsync(ExceptionWrapper.wrapFunction(() -> {
+            return CompletableFuture.supplyAsync(IpcHelper.preserveContext(ExceptionWrapper.wrapFunction(() -> {
               Method implementationMethod = implementationClass.getMethod(method.getName(), method.getParameterTypes());
               SecurityContextHolder.getContext().setAuthentication(authentication);
               try {
@@ -138,7 +139,7 @@ public class OAuth2Component {
               } finally {
                 SecurityContextHolder.clearContext();
               }
-            }), avroComponent.getExecutor());
+            })), avroComponent.getExecutor());
           } else {
             try {
               return method.invoke(implementation, args);
