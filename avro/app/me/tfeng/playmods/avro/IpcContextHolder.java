@@ -1,5 +1,6 @@
 package me.tfeng.playmods.avro;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -22,16 +23,8 @@ public class IpcContextHolder {
     CONTEXT_HOLDER.remove();
   }
 
-  public static <T> T get(String key) {
-    return (T) getContext().get(key);
-  }
-
   public static Map<String, Object> getContext() {
-    return CONTEXT_HOLDER.get();
-  }
-
-  public static <T> void set(String key, T value) {
-    getContext().put(key, value);
+    return Collections.unmodifiableMap(CONTEXT_HOLDER.get());
   }
 
   public static void setContext(Map<String, Object> context) {

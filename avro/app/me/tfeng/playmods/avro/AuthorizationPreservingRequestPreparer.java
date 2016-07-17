@@ -53,7 +53,7 @@ public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
   @Override
   public void prepare(WSRequest request, String contentType, URL url) {
     if (request != null) {
-      String authorization = IpcContextHolder.get(AUTHORIZATION_HEADER);
+      String authorization = (String) IpcContextHolder.getContext().get(AUTHORIZATION_HEADER);
       if (authorization != null) {
         request.setHeader(AUTHORIZATION_HEADER, BEARER + " " + authorization);
       } else if (controllerRequest != null) {
