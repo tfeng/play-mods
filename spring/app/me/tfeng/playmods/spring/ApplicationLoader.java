@@ -20,14 +20,15 @@
 
 package me.tfeng.playmods.spring;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigList;
 
-import play.Configuration;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.inject.guice.GuiceApplicationLoader;
 
@@ -39,30 +40,22 @@ public class ApplicationLoader extends GuiceApplicationLoader {
   @Override
   public GuiceApplicationBuilder builder(Context context) {
     Map<String, Object> extra = Maps.newHashMap();
-    addExtraConfiguration(context.initialConfiguration(), extra);
+    Config initialConfig = context.initialConfig();
+    addExtraConfiguration(initialConfig, extra);
     return initialBuilder
         .in(context.environment())
-        .loadConfig(new Configuration(extra).withFallback(context.initialConfiguration()))
+        .loadConfig(ConfigFactory.parseMap(extra).withFallback(initialConfig))
         .overrides(overrides(context));
   }
 
-  protected void addExtraConfiguration(Configuration initialConfig, Map<String, Object> extra) {
-    setExtraConfigurationValue(initialConfig, extra, "application.global", Global.class.getName());
+  protected void addExtraConfiguration(Config initialConfig, Map<String, Object> extra) {
     setExtraConfigurationValue(initialConfig, extra, "play.http.errorHandler", ErrorHandler.class.getName());
     addToExtraConfigurationList(initialConfig, extra, "play.modules.enabled", Module.class.getName());
   }
 
-  protected void addToExtraConfigurationList(Configuration initialConfig, Map<String, Object> extra, String key,
+  protected void addToExtraConfigurationList(Config initialConfig, Map<String, Object> extra, String key,
       Object value) {
-    List<Object> list = null;
-    try {
-      list = initialConfig.getList(key);
-    } catch (Throwable t) {
-    }
-    if (list == null) {
-      list = Collections.emptyList();
-    }
-
+    ConfigList list = initialConfig.getList(key);
     if (!list.contains(value)) {
       List<Object> newList = Lists.newArrayListWithCapacity(list.size() + 1);
       newList.addAll(list);
@@ -71,8 +64,7 @@ public class ApplicationLoader extends GuiceApplicationLoader {
     }
   }
 
-  protected void setExtraConfigurationValue(Configuration initialConfig, Map<String, Object> extra, String key,
-      Object value) {
+  protected void setExtraConfigurationValue(Config initialConfig, Map<String, Object> extra, String key, Object value) {
     try {
       if (initialConfig.getConfig(key) == null) {
         extra.put(key, value);

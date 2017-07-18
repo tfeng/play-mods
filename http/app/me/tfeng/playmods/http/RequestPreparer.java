@@ -22,12 +22,12 @@ package me.tfeng.playmods.http;
 
 import java.net.URL;
 
-import play.libs.ws.WSRequest;
+import play.libs.ws.StandaloneWSRequest;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public interface RequestPreparer {
 
-  void prepare(WSRequest request, String contentType, URL url);
+  void prepare(StandaloneWSRequest request, String contentType, URL url);
 }

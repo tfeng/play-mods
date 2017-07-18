@@ -4,4 +4,6 @@ name := "http"
 
 Settings.common
 
-libraryDependencies += javaWs
+libraryDependencies ++= Seq(
+  "com.typesafe.play" %% "play-ahc-ws-standalone" % Versions.playWs
+)

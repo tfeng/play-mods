@@ -37,7 +37,8 @@ import me.tfeng.playmods.http.RequestPoster;
 import me.tfeng.playmods.http.RequestPreparer;
 import me.tfeng.playmods.spring.ApplicationError;
 import me.tfeng.playmods.spring.ExceptionWrapper;
-import play.libs.ws.WSResponse;
+import play.libs.ws.StandaloneWSResponse;
+import play.shaded.ahc.org.asynchttpclient.Response;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -70,7 +71,8 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     return asyncReadBuffers(asyncWriteBuffers(request, postRequestPreparer));
   }
 
-  protected CompletionStage<List<ByteBuffer>> asyncReadBuffers(CompletionStage<WSResponse> responseCompletionStage) {
+  protected CompletionStage<List<ByteBuffer>> asyncReadBuffers(
+      CompletionStage<? extends StandaloneWSResponse> responseCompletionStage) {
     return responseCompletionStage.handle((response, throwable) -> {
       if (throwable != null) {
         throw ExceptionWrapper.wrap(throwable);
@@ -80,7 +82,7 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
           if (status >= 400) {
             throw new ApplicationError(status, "Remote server at " + url + " returned HTTP response code " + status);
           }
-          InputStream stream = response.getBodyAsStream();
+          InputStream stream = ((Response) response.getUnderlying()).getResponseBodyAsStream();
           return readBuffers(stream);
         } catch (Throwable t) {
           throw ExceptionWrapper.wrap(t);
@@ -89,7 +91,7 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     });
   }
 
-  protected CompletionStage<WSResponse> asyncWriteBuffers(List<ByteBuffer> buffers,
+  protected CompletionStage<? extends StandaloneWSResponse> asyncWriteBuffers(List<ByteBuffer> buffers,
       RequestPreparer postRequestPreparer) {
     return CompletableFuture
         .supplyAsync(ExceptionWrapper.wrapFunction(() -> {
@@ -105,7 +107,7 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     return CONTENT_TYPE;
   }
 
-  protected CompletionStage<WSResponse> postRequest(URL url, byte[] body, RequestPreparer postRequestPreparer)
+  protected CompletionStage<? extends StandaloneWSResponse> postRequest(URL url, byte[] body, RequestPreparer postRequestPreparer)
       throws IOException {
     return requestPoster.postRequest(url, getContentType(), body, postRequestPreparer);
   }

@@ -20,8 +20,6 @@
 
 package me.tfeng.playmods.http.factories;
 
-import org.asynchttpclient.AsyncHttpClientConfig;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +28,8 @@ import org.springframework.stereotype.Component;
 
 import play.Logger;
 import play.Logger.ALogger;
+import play.shaded.ahc.org.asynchttpclient.AsyncHttpClientConfig;
+import play.shaded.ahc.org.asynchttpclient.DefaultAsyncHttpClientConfig;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)

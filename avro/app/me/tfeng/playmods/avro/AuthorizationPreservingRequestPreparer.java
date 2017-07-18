@@ -25,7 +25,7 @@ import java.net.URL;
 import me.tfeng.playmods.http.RequestPreparer;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.ws.WSRequest;
+import play.libs.ws.StandaloneWSRequest;
 import play.mvc.Controller;
 import play.mvc.Http.Request;
 
@@ -51,15 +51,15 @@ public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
   }
 
   @Override
-  public void prepare(WSRequest request, String contentType, URL url) {
+  public void prepare(StandaloneWSRequest request, String contentType, URL url) {
     if (request != null) {
       String authorization = (String) IpcContextHolder.getContext().get(AUTHORIZATION_HEADER);
       if (authorization != null) {
-        request.setHeader(AUTHORIZATION_HEADER, BEARER + " " + authorization);
+        request.addHeader(AUTHORIZATION_HEADER, BEARER + " " + authorization);
       } else if (controllerRequest != null) {
         authorization = controllerRequest.getHeader(AUTHORIZATION_HEADER);
         if (authorization != null) {
-          request.setHeader(AUTHORIZATION_HEADER, authorization);
+          request.addHeader(AUTHORIZATION_HEADER, authorization);
         }
       }
     }

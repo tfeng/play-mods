@@ -20,7 +20,6 @@
 
 package me.tfeng.playmods.http;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.CompletionStage;
@@ -29,9 +28,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import akka.util.ByteString;
 import me.tfeng.playmods.http.factories.ClientFactory;
-import play.libs.ws.WSRequest;
-import play.libs.ws.WSResponse;
+import play.libs.ws.InMemoryBodyWritable;
+import play.libs.ws.StandaloneWSRequest;
+import play.libs.ws.StandaloneWSResponse;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -44,12 +45,12 @@ public class HttpRequestPoster implements RequestPoster {
   private ClientFactory clientFactory;
 
   @Override
-  public CompletionStage<WSResponse> postRequest(URL url, String contentType, byte[] body,
+  public CompletionStage<? extends StandaloneWSResponse> postRequest(URL url, String contentType, byte[] body,
       RequestPreparer requestPreparer) throws IOException {
-    WSRequest request = clientFactory.create().url(url.toString()).setContentType(contentType);
+    StandaloneWSRequest request = clientFactory.create().url(url.toString()).setContentType(contentType);
     if (requestPreparer != null) {
       requestPreparer.prepare(request, contentType, url);
     }
-    return request.post(new ByteArrayInputStream(body));
+    return request.post(new InMemoryBodyWritable(ByteString.fromArray(body), contentType));
   }
 }

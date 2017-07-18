@@ -22,7 +22,7 @@ package me.tfeng.playmods.oauth2;
 
 import java.util.Map;
 
-import play.Configuration;
+import com.typesafe.config.Config;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -30,10 +30,10 @@ import play.Configuration;
 public class ApplicationLoader extends me.tfeng.playmods.spring.ApplicationLoader {
 
   @Override
-  protected void addExtraConfiguration(Configuration initialConfig, Map<String, Object> extra) {
-    super.addExtraConfiguration(initialConfig, extra);
+  protected void addExtraConfiguration(Config config, Map<String, Object> extra) {
+    super.addExtraConfiguration(config, extra);
 
-    setExtraConfigurationValue(initialConfig, extra, "play.http.actionCreator", ActionCreator.class.getName());
-    setExtraConfigurationValue(initialConfig, extra, "play.http.errorHandler", ErrorHandler.class.getName());
+    setExtraConfigurationValue(config, extra, "play.http.actionCreator", ActionCreator.class.getName());
+    setExtraConfigurationValue(config, extra, "play.http.errorHandler", ErrorHandler.class.getName());
   }
 }

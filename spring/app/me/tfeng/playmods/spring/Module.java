@@ -38,13 +38,15 @@ import com.google.common.collect.Lists;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException.Missing;
 
-import play.Configuration;
 import play.Environment;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
- */@Order
+ */
+@Order
 public class Module implements com.google.inject.Module {
 
   private static class BeanProvider<T> implements Provider<T> {
@@ -98,12 +100,14 @@ public class Module implements com.google.inject.Module {
 
   private ConfigurableApplicationContext applicationContext;
 
-  public Module(Environment environment, Configuration configuration) {
-    applicationContext = createApplicationContext(environment, configuration);
+  public Module(Environment environment, Config config) {
+    applicationContext = createApplicationContext(environment, config);
   }
 
   @Override
   public void configure(Binder binder) {
+    binder.bind(SpringComponent.class).asEagerSingleton();
+
     ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
     Arrays.stream(beanFactory.getBeanDefinitionNames()).forEach(name -> {
       BeanDefinition definition = beanFactory.getBeanDefinition(name);
@@ -116,27 +120,42 @@ public class Module implements com.google.inject.Module {
     });
   }
 
-  protected ConfigurableApplicationContext createApplicationContext(Environment environment,
-      Configuration configuration) {
+  protected ConfigurableApplicationContext createApplicationContext(Environment environment, Config config) {
     ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
 
-    List<String> activeProfiles = configuration.getStringList(ACTIVE_PROFILES_KEY, Lists.newArrayList());
-    List<String> defaultProfiles = configuration.getStringList(DEFAULT_PROFILES_KEY, Lists.newArrayList());
+    List<String> activeProfiles;
+    try {
+      activeProfiles = config.getStringList(ACTIVE_PROFILES_KEY);
+    } catch (Missing e) {
+      activeProfiles = Lists.newArrayList();
+    }
+    List<String> defaultProfiles;
+    try {
+      defaultProfiles = config.getStringList(DEFAULT_PROFILES_KEY);
+    } catch (Missing e) {
+      defaultProfiles = Lists.newArrayList();
+    }
     activeProfiles.add(environment.mode().name().toLowerCase());
     defaultProfiles.add(environment.mode().name().toLowerCase());
 
     applicationContext.getEnvironment().setActiveProfiles(activeProfiles.toArray(new String[activeProfiles.size()]));
     applicationContext.getEnvironment().setDefaultProfiles(defaultProfiles.toArray(new String[defaultProfiles.size()]));
 
-    applicationContext.setConfigLocations(getSpringConfigLocations(configuration));
+    applicationContext.setConfigLocations(getSpringConfigLocations(config));
     applicationContext.refresh();
     return applicationContext;
   }
 
-  protected String[] getSpringConfigLocations(Configuration configuration) {
+  protected String[] getSpringConfigLocations(Config config) {
     List<String> springConfigLocations = Lists.newArrayList();
     springConfigLocations.addAll(INTERNAL_CONFIG_LOCATIONS);
-    springConfigLocations.addAll(configuration.getStringList(CONFIG_LOCATIONS_KEY, DEFAULT_CONFIG_LOCATIONS));
+    List<String> configLocations;
+    try {
+      configLocations = config.getStringList(CONFIG_LOCATIONS_KEY);
+    } catch (Missing e) {
+      configLocations = DEFAULT_CONFIG_LOCATIONS;
+    }
+    springConfigLocations.addAll(configLocations);
     return springConfigLocations.toArray(new String[springConfigLocations.size()]);
   }
 }

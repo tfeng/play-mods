@@ -24,13 +24,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.CompletionStage;
 
-import play.libs.ws.WSResponse;
+import play.libs.ws.StandaloneWSResponse;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
  */
 public interface RequestPoster {
 
-  CompletionStage<WSResponse> postRequest(URL url, String contentType, byte[] body, RequestPreparer requestPreparer)
-      throws IOException;
+  CompletionStage<? extends StandaloneWSResponse> postRequest(URL url, String contentType, byte[] body,
+      RequestPreparer requestPreparer) throws IOException;
 }

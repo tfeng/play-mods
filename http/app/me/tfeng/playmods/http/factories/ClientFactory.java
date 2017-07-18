@@ -20,7 +20,6 @@
 
 package me.tfeng.playmods.http.factories;
 
-import org.asynchttpclient.AsyncHttpClientConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -31,8 +30,10 @@ import akka.stream.Materializer;
 import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.ws.WSClient;
-import play.libs.ws.ahc.AhcWSClient;
+import play.libs.ws.StandaloneWSClient;
+import play.libs.ws.ahc.StandaloneAhcWSClient;
+import play.shaded.ahc.org.asynchttpclient.AsyncHttpClientConfig;
+import play.shaded.ahc.org.asynchttpclient.DefaultAsyncHttpClient;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -44,7 +45,7 @@ public class ClientFactory implements Startable {
 
   @Autowired(required = false)
   @Qualifier("play-mods.http.async-http-client")
-  private WSClient client;
+  private StandaloneAhcWSClient client;
 
   @Autowired
   @Qualifier("play-mods.http.client-config-factory")
@@ -53,7 +54,7 @@ public class ClientFactory implements Startable {
   @Inject
   private Materializer materializer;
 
-  public WSClient create() {
+  public StandaloneWSClient create() {
     return client;
   }
 
@@ -61,7 +62,7 @@ public class ClientFactory implements Startable {
   public void onStart() throws Throwable {
     if (client == null) {
       AsyncHttpClientConfig config = clientConfigFactory.create();
-      client = new AhcWSClient(config, materializer);
+      client = new StandaloneAhcWSClient(new DefaultAsyncHttpClient(config), materializer);
     } else {
       LOG.info("Async http client is provided through Spring wiring; ignoring configuration");
     }
