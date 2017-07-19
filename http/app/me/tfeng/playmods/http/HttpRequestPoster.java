@@ -20,6 +20,7 @@
 
 package me.tfeng.playmods.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.CompletionStage;
@@ -28,9 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import akka.util.ByteString;
+import akka.stream.javadsl.StreamConverters;
 import me.tfeng.playmods.http.factories.ClientFactory;
-import play.libs.ws.InMemoryBodyWritable;
+import play.libs.ws.SourceBodyWritable;
 import play.libs.ws.StandaloneWSRequest;
 import play.libs.ws.StandaloneWSResponse;
 
@@ -51,6 +52,8 @@ public class HttpRequestPoster implements RequestPoster {
     if (requestPreparer != null) {
       requestPreparer.prepare(request, contentType, url);
     }
-    return request.post(new InMemoryBodyWritable(ByteString.fromArray(body), contentType));
+    SourceBodyWritable bodyWritable =
+        new SourceBodyWritable(StreamConverters.fromInputStream(() -> new ByteArrayInputStream(body)));
+    return request.post(bodyWritable);
   }
 }

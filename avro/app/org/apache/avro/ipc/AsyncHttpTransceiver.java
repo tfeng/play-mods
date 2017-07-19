@@ -107,8 +107,8 @@ public class AsyncHttpTransceiver extends HttpTransceiver implements AsyncTransc
     return CONTENT_TYPE;
   }
 
-  protected CompletionStage<? extends StandaloneWSResponse> postRequest(URL url, byte[] body, RequestPreparer postRequestPreparer)
-      throws IOException {
+  protected CompletionStage<? extends StandaloneWSResponse> postRequest(URL url, byte[] body,
+      RequestPreparer postRequestPreparer) throws IOException {
     return requestPoster.postRequest(url, getContentType(), body, postRequestPreparer);
   }
 }
