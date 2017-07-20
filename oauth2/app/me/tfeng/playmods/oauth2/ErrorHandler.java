@@ -27,8 +27,8 @@ import javax.inject.Provider;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 
 import com.google.inject.Inject;
+import com.typesafe.config.Config;
 
-import play.Configuration;
 import play.Environment;
 import play.api.OptionalSourceMapper;
 import play.api.routing.Router;
@@ -41,9 +41,9 @@ import play.mvc.Results;
 public class ErrorHandler extends me.tfeng.playmods.spring.ErrorHandler {
 
   @Inject
-  public ErrorHandler(Configuration configuration, Environment environment, OptionalSourceMapper sourceMapper,
+  public ErrorHandler(Config config, Environment environment, OptionalSourceMapper sourceMapper,
       Provider<Router> routes) {
-    super(configuration, environment, sourceMapper, routes);
+    super(config, environment, sourceMapper, routes);
   }
 
   @Override

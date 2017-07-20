@@ -21,6 +21,7 @@
 package me.tfeng.playmods.avro;
 
 import java.net.URL;
+import java.util.Optional;
 
 import me.tfeng.playmods.http.RequestPreparer;
 import play.Logger;
@@ -57,9 +58,9 @@ public class AuthorizationPreservingRequestPreparer implements RequestPreparer {
       if (authorization != null) {
         request.addHeader(AUTHORIZATION_HEADER, BEARER + " " + authorization);
       } else if (controllerRequest != null) {
-        authorization = controllerRequest.getHeader(AUTHORIZATION_HEADER);
-        if (authorization != null) {
-          request.addHeader(AUTHORIZATION_HEADER, authorization);
+        Optional<String> authorizationHeader = controllerRequest.header(AUTHORIZATION_HEADER);
+        if (authorizationHeader.isPresent()) {
+          request.addHeader(AUTHORIZATION_HEADER, authorizationHeader.get());
         }
       }
     }

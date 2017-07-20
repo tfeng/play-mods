@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 
 import com.google.inject.Inject;
 
-import play.cache.CacheApi;
+import play.cache.SyncCacheApi;
 
 /**
  * @author Thomas Feng (huining.feng@gmail.com)
@@ -34,7 +34,7 @@ import play.cache.CacheApi;
 public class CacheSecurityContextStore implements SecurityContextStore {
 
   @Inject
-  private CacheApi cacheApi;
+  private SyncCacheApi cacheApi;
 
   @Override
   public SecurityContext load(String id) {

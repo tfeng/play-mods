@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -49,7 +50,6 @@ import akka.util.ByteIterator;
 import akka.util.ByteString;
 import me.tfeng.playmods.avro.factories.ResponderFactory;
 import me.tfeng.playmods.spring.ExceptionWrapper;
-import me.tfeng.playmods.spring.ThrowingFunction;
 import me.tfeng.toolbox.avro.AvroHelper;
 import me.tfeng.toolbox.common.Constants;
 import play.Application;
@@ -69,8 +69,6 @@ public class JsonIpcController extends Controller {
 
   public static final String CONTENT_TYPE = "avro/json";
 
-  public static final String CONTENT_TYPE_HEADER = "content-type";
-
   private static final ALogger LOG = Logger.of(JsonIpcController.class);
 
   @Inject
@@ -86,10 +84,15 @@ public class JsonIpcController extends Controller {
 
   @BodyParser.Of(BodyParser.Raw.class)
   public CompletionStage<Result> post(String protocol, String message) throws Throwable {
-    String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
-    ContentType contentType = ContentType.parse(contentTypeHeader);
-    if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
-      throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
+    Optional<String> contentTypeHeader = request().contentType();
+    if (contentTypeHeader.isPresent()) {
+      ContentType contentType = ContentType.parse(contentTypeHeader.get());
+      if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
+        throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE
+            + " is expected");
+      }
+    } else {
+      throw new RuntimeException("Missing content type; " + CONTENT_TYPE + " is expected");
     }
 
     Class<?> protocolClass = application.classloader().loadClass(protocol);

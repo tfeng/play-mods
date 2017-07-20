@@ -20,11 +20,11 @@
 
 package me.tfeng.playmods.avro;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.apache.avro.ipc.AsyncHttpTransceiver;
@@ -66,10 +66,15 @@ public class BinaryIpcController extends Controller {
 
   @BodyParser.Of(BodyParser.Raw.class)
   public CompletionStage<Result> post(String protocol) throws Throwable {
-    String contentTypeHeader = request().getHeader(CONTENT_TYPE_HEADER);
-    ContentType contentType = ContentType.parse(contentTypeHeader);
-    if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
-      throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE + " is expected");
+    Optional<String> contentTypeHeader = request().contentType();
+    if (contentTypeHeader.isPresent()) {
+      ContentType contentType = ContentType.parse(contentTypeHeader.get());
+      if (!CONTENT_TYPE.equals(contentType.getMimeType())) {
+        throw new RuntimeException("Unable to handle content type " + contentType + "; " + CONTENT_TYPE
+            + " is expected");
+      }
+    } else {
+      throw new RuntimeException("Missing content type; " + CONTENT_TYPE + " is expected");
     }
 
     Class<?> protocolClass = application.classloader().loadClass(protocol);

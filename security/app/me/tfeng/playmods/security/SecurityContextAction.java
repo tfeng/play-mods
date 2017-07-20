@@ -20,6 +20,8 @@
 
 package me.tfeng.playmods.security;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
@@ -81,7 +83,10 @@ public class SecurityContextAction extends Action<SecurityContext> {
           }
 
           String newId = UUID.randomUUID().toString();
-          context.response().setCookie(Cookie.builder(cookieName, newId).withMaxAge(expirationInSeconds).build());
+          context.response().setCookie(Cookie
+              .builder(cookieName, newId)
+              .withMaxAge(Duration.of(expirationInSeconds, ChronoUnit.SECONDS))
+              .build());
           securityContextStore.save(newId, SecurityContextHolder.getContext(), expirationInSeconds);
         }
       });

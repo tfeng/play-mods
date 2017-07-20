@@ -26,8 +26,8 @@ import java.util.concurrent.CompletionStage;
 import javax.inject.Provider;
 
 import com.google.inject.Inject;
+import com.typesafe.config.Config;
 
-import play.Configuration;
 import play.Environment;
 import play.Logger;
 import play.Logger.ALogger;
@@ -46,9 +46,9 @@ public class ErrorHandler extends DefaultHttpErrorHandler {
   private static final ALogger LOG = Logger.of(ErrorHandler.class);
 
   @Inject
-  public ErrorHandler(Configuration configuration, Environment environment, OptionalSourceMapper sourceMapper,
+  public ErrorHandler(Config config, Environment environment, OptionalSourceMapper sourceMapper,
       Provider<Router> routes) {
-    super(configuration, environment, sourceMapper, routes);
+    super(config, environment, sourceMapper, routes);
   }
 
   public Result getResultOnError(Throwable t) {

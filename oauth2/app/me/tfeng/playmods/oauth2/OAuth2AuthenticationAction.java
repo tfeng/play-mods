@@ -21,6 +21,7 @@
 package me.tfeng.playmods.oauth2;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.apache.http.HttpStatus;
@@ -53,13 +54,11 @@ public class OAuth2AuthenticationAction extends Action<OAuth2Authentication> {
   private static final String OAUTH2_COMPONENT_KEY = "play-mods.oauth2.component";
 
   public static String getAuthorizationToken(RequestHeader request) {
-    String[] headers = request.headers().get(AUTHORIZATION_HEADER);
-    if (headers != null) {
-      for (String header : headers) {
-        if (header.toLowerCase().startsWith(BEARER.toLowerCase())) {
-          String authHeaderValue = header.substring(BEARER.length()).trim();
-          return authHeaderValue.split(",")[0];
-        }
+    Optional<String> authorizationHeader = request.header(AUTHORIZATION_HEADER);
+    if (authorizationHeader.isPresent()) {
+      if (authorizationHeader.get().toLowerCase().startsWith(BEARER.toLowerCase())) {
+        String authHeaderValue = authorizationHeader.get().substring(BEARER.length()).trim();
+        return authHeaderValue.split(",")[0];
       }
     }
     return request.getQueryString(ACCESS_TOKEN);
