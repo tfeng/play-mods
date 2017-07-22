@@ -30,7 +30,6 @@ import akka.stream.Materializer;
 import me.tfeng.toolbox.spring.Startable;
 import play.Logger;
 import play.Logger.ALogger;
-import play.libs.ws.StandaloneWSClient;
 import play.libs.ws.ahc.StandaloneAhcWSClient;
 import play.shaded.ahc.org.asynchttpclient.AsyncHttpClientConfig;
 import play.shaded.ahc.org.asynchttpclient.DefaultAsyncHttpClient;
@@ -54,7 +53,7 @@ public class ClientFactory implements Startable {
   @Inject
   private Materializer materializer;
 
-  public StandaloneWSClient create() {
+  public StandaloneAhcWSClient create() {
     return client;
   }
 
