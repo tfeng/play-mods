@@ -5,6 +5,6 @@ name := "security"
 Settings.common
 
 libraryDependencies ++= Seq(
-  cache,
+  cacheApi,
   "org.springframework.security" % "spring-security-core" % Versions.springSecurity
 )
